@@ -13,6 +13,10 @@ const (
 	KEEP_ALIVE_TTL = 10 // Second
 )
 
+var (
+	last_hostname, last_addrStr string
+)
+
 func putKV(client *etcd.Client, lease etcd.LeaseID, key, value string) {
 	MaoLog(DEBUG, fmt.Sprintf("To put { %s -> %s }", key, value))
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -139,21 +143,16 @@ func announceNodeInfo(client *etcd.Client, lease etcd.LeaseID, hostname string, 
 
 	addrStr = string(addrBytes)
 
-	putKV(client, lease, fmt.Sprintf("/node/%s/addrs", hostname), addrStr)
+	if last_hostname != hostname || last_addrStr != addrStr {
+		putKV(client, lease, fmt.Sprintf("/node/%s/addrs", hostname), addrStr)
+	}
+	putKV(client, lease, fmt.Sprintf("/node/%s/lastseen", hostname), time.Now().String())
+
+	last_hostname = hostname
+	last_addrStr = addrStr
 }
 
 func main() {
-
-	hostname, err := getHostname()
-	if err != nil {
-		return
-	}
-
-	addrs, err := getUnicastIp()
-	if err != nil {
-		return
-	}
-
 	client, err := createClient()
 	if err != nil {
 		return
@@ -171,11 +170,21 @@ func main() {
 	}
 
 	go watchKeyPrefix(client, "/node")
-
-	time.Sleep(3 * time.Second)
-	announceNodeInfo(client, lease, hostname, addrs)
+	time.Sleep(1 * time.Second)
 
 	for {
-		time.Sleep(3600 * time.Second)
+		hostname, err := getHostname()
+		if err != nil {
+			return
+		}
+
+		addrs, err := getUnicastIp()
+		if err != nil {
+			return
+		}
+
+		announceNodeInfo(client, lease, hostname, addrs)
+
+		time.Sleep(5 * time.Second)
 	}
 }

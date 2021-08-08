@@ -6,8 +6,8 @@ type MaoLogLevel uint8
 
 const (
 	DEBUG MaoLogLevel = 0
-	INFO MaoLogLevel = 1
-	WARN MaoLogLevel = 2
+	INFO  MaoLogLevel = 1
+	WARN  MaoLogLevel = 2
 	ERROR MaoLogLevel = 3
 )
 
@@ -18,7 +18,7 @@ var (
 func MaoLog(level MaoLogLevel, logStr string) {
 	switch level {
 	case DEBUG:
-
+		//fallthrough
 	case INFO:
 		fallthrough
 	case WARN:
