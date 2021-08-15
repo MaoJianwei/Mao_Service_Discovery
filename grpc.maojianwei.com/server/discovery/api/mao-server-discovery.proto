@@ -1,0 +1,22 @@
+
+syntax = "proto3";
+
+option go_package = "grpc.maojianwei.com/server/discovery/api";
+
+package Mao;
+
+service MaoServerDiscovery {
+    rpc Report(stream ServerReport) returns (stream ServerResponse) {}
+}
+
+message ServerReport {
+    bool ok = 1;
+    string hostname = 2;
+    repeated string ips = 3;
+    string now_datetime = 4;
+}
+
+message ServerResponse {
+    string hostname = 1;
+    string new_address = 2;
+}
