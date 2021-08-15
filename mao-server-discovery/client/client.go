@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	serverAddr = "127.0.0.1:28888"
+	serverAddr = "monitor.maojianwei.com:28888"
 )
 
 func main() {
