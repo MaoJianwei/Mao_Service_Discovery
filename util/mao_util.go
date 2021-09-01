@@ -35,3 +35,15 @@ func GetUnicastIp() ([]string, error) {
 	}
 	return ret, nil
 }
+
+func JudgeIPv6(ip *net.IP) bool {
+	return ip.To4() == nil
+}
+
+func GetAddrPort(addr *net.IP, port uint32) string {
+	if JudgeIPv6(addr) {
+		return fmt.Sprintf("[%s]:%d", addr.String(), port)
+	} else {
+		return fmt.Sprintf("%s:%d", addr.String(), port)
+	}
+}

@@ -1,7 +1,8 @@
-package main
+package branch
 
 import (
 	pb "MaoServerDiscovery/grpc.maojianwei.com/server/discovery/api"
+	parent "MaoServerDiscovery/util"
 	"MaoServerDiscovery/util"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -16,10 +17,10 @@ import (
 	"time"
 )
 
-const (
-	addr    = "[::]:28888"
-	addrWeb = "[::]:29999"
-)
+//const (
+//	addr    = "[::]:28888"
+//	addrWeb = "[::]:29999"
+//)
 
 var (
 	serverWebShow []*ServerNode
@@ -86,13 +87,6 @@ func dealRecv(reportStream pb.MaoServerDiscovery_ReportServer, mergeChannel chan
 	}
 }
 
-func runServer(server *grpc.Server, listener net.Listener) {
-	util.MaoLog(util.INFO, "Server running...")
-	if err := server.Serve(listener); err != nil {
-		util.MaoLog(util.ERROR, fmt.Sprintf("%s", err))
-	}
-	util.MaoLog(util.INFO, "Serve over")
-}
 
 func mergeAliveServer(mergeChannel chan *ServerNode, serverInfo *sync.Map) {
 	for serverNode := range mergeChannel {
@@ -100,7 +94,7 @@ func mergeAliveServer(mergeChannel chan *ServerNode, serverInfo *sync.Map) {
 	}
 }
 
-func dumpAliveServer(serverInfo *sync.Map) {
+func dumpAliveServer(serverInfo *sync.Map, dump_interval uint32) {
 	count := 1
 	for {
 		servers := make([]*ServerNode, 0)
@@ -118,10 +112,22 @@ func dumpAliveServer(serverInfo *sync.Map) {
 		for _, s := range servers {
 			dump = fmt.Sprintf("%s%s => %s - %s\n", dump, s.Hostname, s.LocalLastSeen, s.Ips)
 		}
-		util.MaoLog(util.DEBUG, fmt.Sprintf("========== %d ==========\n%s", count, dump))
+		util.MaoLog(util.INFO, fmt.Sprintf("========== %d ==========\n%s", count, dump))
 
 		count++
-		time.Sleep(1 * time.Second)
+		time.Sleep(time.Duration(dump_interval) * time.Millisecond)
+	}
+}
+
+func startRestful(webAddr string) {
+	util.MaoLog(util.INFO, fmt.Sprintf("Starting web show %s ...", webAddr))
+	gin.SetMode(gin.ReleaseMode)
+	restful := gin.Default()
+	restful.GET("/", showServers)
+	err := restful.Run(webAddr)
+	if err != nil {
+		util.MaoLog(util.ERROR, fmt.Sprintf("Fail to run rest server, %s", err))
+		return
 	}
 }
 
@@ -130,26 +136,23 @@ func showServers(c *gin.Context) {
 	c.IndentedJSON(200, serverTmp)
 }
 
-func startRestful() {
-	util.MaoLog(util.INFO, "Starting web show ...")
-	gin.SetMode(gin.ReleaseMode)
-	restful := gin.Default()
-	restful.GET("/", showServers)
-	err := restful.Run(addrWeb)
-	if err != nil {
-		util.MaoLog(util.ERROR, fmt.Sprintf("Fail to run rest server, %s", err))
-		return
+
+func runServer(server *grpc.Server, listener net.Listener) {
+	util.MaoLog(util.INFO, fmt.Sprintf("Server running %s ...", listener.Addr().String()))
+	if err := server.Serve(listener); err != nil {
+		util.MaoLog(util.ERROR, fmt.Sprintf("%s", err))
 	}
+	util.MaoLog(util.INFO, "Serve over")
 }
 
-func main() {
+func RunServer(report_server_addr *net.IP, report_server_port uint32, web_server_addr *net.IP, web_server_port uint32, dump_interval uint32) {
 
 	log.SetOutput(os.Stdout)
 
 	mergeChannel := make(chan *ServerNode, 1024)
 	serverInfo := sync.Map{}
 
-	listener, err := net.Listen("tcp", addr)
+	listener, err := net.Listen("tcp", parent.GetAddrPort(report_server_addr, report_server_port))
 	if err != nil {
 		log.Printf("%s", err)
 		return
@@ -163,7 +166,7 @@ func main() {
 
 	go mergeAliveServer(mergeChannel, &serverInfo)
 
-	go startRestful()
+	go startRestful(parent.GetAddrPort(web_server_addr, web_server_port))
 
-	dumpAliveServer(&serverInfo)
+	dumpAliveServer(&serverInfo, dump_interval)
 }

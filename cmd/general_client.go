@@ -1,4 +1,4 @@
-package main
+package branch
 
 import (
 	pb "MaoServerDiscovery/grpc.maojianwei.com/server/discovery/api"
@@ -6,17 +6,18 @@ import (
 	"context"
 	"fmt"
 	"google.golang.org/grpc"
+	"net"
 	"time"
 )
 
-const (
-	serverAddr = "monitor.maojianwei.com:28888"
-)
 
-func main() {
+func RunGeneralClient(report_server_addr *net.IP, report_server_port uint32, report_interval uint32) {
 	parent.MaoLog(parent.INFO, "Connect to center ...")
 	for {
-		ctx, cancelCtx := context.WithTimeout(context.Background(), 3*time.Second)
+		serverAddr := parent.GetAddrPort(report_server_addr, report_server_port)
+		parent.MaoLog(parent.INFO, fmt.Sprintf("Connect to %s ...", serverAddr))
+
+		ctx, cancelCtx := context.WithTimeout(context.Background(), 3 * time.Second)
 		connect, err := grpc.DialContext(ctx, serverAddr, grpc.WithInsecure(), grpc.WithBlock())
 		if err != nil {
 			parent.MaoLog(parent.WARN, fmt.Sprintf("Retry, %s ...", err))
@@ -63,7 +64,7 @@ func main() {
 			parent.MaoLog(parent.INFO, fmt.Sprintf("ServerReport - %v", report))
 			parent.MaoLog(parent.DEBUG, fmt.Sprintf("%d: Sent", count))
 			count++
-			time.Sleep(1 * time.Second)
+			time.Sleep(time.Duration(report_interval) * time.Millisecond)
 		}
 		time.Sleep(1 * time.Second)
 	}
