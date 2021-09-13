@@ -106,15 +106,20 @@ func dumpAliveServer(serverInfo *sync.Map, dump_interval uint32) {
 			return servers[i].Hostname < servers[j].Hostname
 		})
 
-		serverWebShow = servers
+
+		serverWeb := make([]*ServerNode, 0)
 
 		dump := ""
 		for _, s := range servers {
-			if time.Now().Sub(s.LocalLastSeen) > 5 * time.Second {
+			if time.Now().Sub(s.LocalLastSeen) < 5 * time.Second {
+				serverWeb = append(serverWeb, s)
 				dump = fmt.Sprintf("%s%s => %s - %s\n", dump, s.Hostname, s.LocalLastSeen, s.Ips)
 			}
 		}
 		util.MaoLog(util.INFO, fmt.Sprintf("========== %d ==========\n%s", count, dump))
+
+		serverWebShow = serverWeb
+
 
 		count++
 		time.Sleep(time.Duration(dump_interval) * time.Millisecond)
