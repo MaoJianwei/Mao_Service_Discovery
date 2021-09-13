@@ -2,8 +2,8 @@ package branch
 
 import (
 	pb "MaoServerDiscovery/grpc.maojianwei.com/server/discovery/api"
-	parent "MaoServerDiscovery/util"
 	"MaoServerDiscovery/util"
+	parent "MaoServerDiscovery/util"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"google.golang.org/grpc"
@@ -34,7 +34,7 @@ type ServerNode struct {
 	RealClientAddr string
 
 	ServerDateTime string
-	LocalLastSeen  string
+	LocalLastSeen  time.Time
 }
 
 type RealMaoServerDiscoveryHWServer struct {
@@ -80,7 +80,7 @@ func dealRecv(reportStream pb.MaoServerDiscovery_ReportServer, mergeChannel chan
 				Ips:            report.GetIps(),
 				ServerDateTime: report.GetNowDatetime(),
 				RealClientAddr: clientAddr,
-				LocalLastSeen:  time.Now().String(),
+				LocalLastSeen:  time.Now(),
 			}
 		}
 		count++
@@ -110,7 +110,9 @@ func dumpAliveServer(serverInfo *sync.Map, dump_interval uint32) {
 
 		dump := ""
 		for _, s := range servers {
-			dump = fmt.Sprintf("%s%s => %s - %s\n", dump, s.Hostname, s.LocalLastSeen, s.Ips)
+			if time.Now().Sub(s.LocalLastSeen) > 5 * time.Second {
+				dump = fmt.Sprintf("%s%s => %s - %s\n", dump, s.Hostname, s.LocalLastSeen, s.Ips)
+			}
 		}
 		util.MaoLog(util.INFO, fmt.Sprintf("========== %d ==========\n%s", count, dump))
 
