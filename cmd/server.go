@@ -130,7 +130,8 @@ func startRestful(webAddr string) {
 	util.MaoLog(util.INFO, fmt.Sprintf("Starting web show %s ...", webAddr))
 	gin.SetMode(gin.ReleaseMode)
 	restful := gin.Default()
-	restful.GET("/", showServers)
+	restful.GET("/json", showServers)
+	restful.GET("/", showServerPlain)
 	err := restful.Run(webAddr)
 	if err != nil {
 		util.MaoLog(util.ERROR, fmt.Sprintf("Fail to run rest server, %s", err))
@@ -141,6 +142,16 @@ func startRestful(webAddr string) {
 func showServers(c *gin.Context) {
 	serverTmp := serverWebShow
 	c.IndentedJSON(200, serverTmp)
+}
+func showServerPlain(c *gin.Context) {
+	serverTmp := serverWebShow
+	dump := "<html><meta http-equiv=\"refresh\" content=\"1\"><title>Mao Service Discovery</title><body>"
+	for _, s := range serverTmp {
+		dump = fmt.Sprintf("%s%s => %s - %s<br/>", dump, s.Hostname, s.LocalLastSeen, s.Ips)
+	}
+	dump += "</body></html>"
+	c.Header("Content-Type", "text/html; charset=utf-8")
+	c.String(200, dump)
 }
 
 
