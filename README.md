@@ -5,12 +5,11 @@ Discover your service by two methods:
 2. Using etcd.
 
 ### Product: Client-Server mode, using gRPC stream.
-#### 1. Web Monitor
-![2-readable-format.png](https://raw.githubusercontent.com/MaoJianwei/MaoServiceDiscovery/master/screenshot/2-readable-format.png)
-
-
-#### 2. REST API (JSON format)
+#### 1. REST API (JSON format)
 ![2-json-format.png](https://raw.githubusercontent.com/MaoJianwei/MaoServiceDiscovery/master/screenshot/2-json-format.png)
+
+#### 2. Web Monitor
+![2-readable-format.png](https://raw.githubusercontent.com/MaoJianwei/MaoServiceDiscovery/master/screenshot/2-readable-format.png)
 
 #### 3. CLI Output
 ![2-cli-output.png](https://raw.githubusercontent.com/MaoJianwei/MaoServiceDiscovery/master/screenshot/2-cli-output.png)
