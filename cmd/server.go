@@ -94,8 +94,8 @@ func mergeAliveServer(mergeChannel chan *ServerNode, serverInfo *sync.Map) {
 	}
 }
 
-func updateServerAlive(serverInfo *sync.Map) {
-	count := 1
+func updateServerAlive(serverInfo *sync.Map, refresh_interval uint32) {
+	//count := 1
 	for {
 		servers := make([]*ServerNode, 0)
 		serverInfo.Range(func(key, value interface{}) bool {
@@ -116,8 +116,8 @@ func updateServerAlive(serverInfo *sync.Map) {
 
 		serverAlive = serverAliveTmp
 
-		count++
-		time.Sleep(1 * time.Millisecond)
+		//count++
+		time.Sleep(time.Duration(refresh_interval) * time.Millisecond)
 	}
 }
 
@@ -176,7 +176,7 @@ func runGrpcServer(server *grpc.Server, listener net.Listener) {
 	util.MaoLog(util.INFO, "Serve over")
 }
 
-func RunServer(report_server_addr *net.IP, report_server_port uint32, web_server_addr *net.IP, web_server_port uint32, dump_interval uint32) {
+func RunServer(report_server_addr *net.IP, report_server_port uint32, web_server_addr *net.IP, web_server_port uint32, dump_interval uint32, refresh_interval uint32) {
 
 	log.SetOutput(os.Stdout)
 
@@ -200,5 +200,5 @@ func RunServer(report_server_addr *net.IP, report_server_port uint32, web_server
 	go startRestful(parent.GetAddrPort(web_server_addr, web_server_port))
 	go startCliOutput(dump_interval)
 
-	updateServerAlive(&serverInfo)
+	updateServerAlive(&serverInfo, refresh_interval)
 }

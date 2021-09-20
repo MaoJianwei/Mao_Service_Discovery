@@ -18,6 +18,7 @@ var (
 	web_server_addr net.IP
 	web_server_port uint32
 	dump_interval uint32
+	refresh_interval uint32
 )
 
 var rootCmd = &cobra.Command{
@@ -84,7 +85,7 @@ var serverCmd = &cobra.Command{
 		//
 		//fmt.Printf("---\n%v, %d\n", args, len(args))
 		//return
-		branch.RunServer(&report_server_addr, report_server_port, &web_server_addr, web_server_port, dump_interval)
+		branch.RunServer(&report_server_addr, report_server_port, &web_server_addr, web_server_port, dump_interval, refresh_interval)
 	},
 }
 
@@ -100,6 +101,8 @@ func init() {
 	serverCmd.Flags().Uint32("web_server_port",29999,"29999")
 
 	serverCmd.Flags().Uint32("dump_interval", 1000, "1000")
+	serverCmd.Flags().Uint32("refresh_interval", 1000, "1000")
+
 
 	generalClientCmd.Flags().Uint32("report_interval", 1000, "1000")
 }
@@ -164,6 +167,14 @@ func readServerArgs(cmd *cobra.Command) error {
 	}
 	if dump_interval < 1 {
 		return errors.New("dump_interval is invalid")
+	}
+
+	refresh_interval, err = cmd.Flags().GetUint32("refresh_interval")
+	if err != nil {
+		return err
+	}
+	if refresh_interval < 1 {
+		return errors.New("refresh_interval is invalid")
 	}
 
 	return nil
