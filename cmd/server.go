@@ -23,7 +23,7 @@ import (
 //)
 
 var (
-	serverWebShow []*ServerNode
+	serverAlive []*ServerNode
 )
 
 type ServerNode struct {
@@ -94,7 +94,7 @@ func mergeAliveServer(mergeChannel chan *ServerNode, serverInfo *sync.Map) {
 	}
 }
 
-func dumpAliveServer(serverInfo *sync.Map, dump_interval uint32) {
+func updateServerAlive(serverInfo *sync.Map) {
 	count := 1
 	for {
 		servers := make([]*ServerNode, 0)
@@ -102,29 +102,42 @@ func dumpAliveServer(serverInfo *sync.Map, dump_interval uint32) {
 			servers = append(servers, value.(*ServerNode))
 			return true
 		})
-		sort.Slice(servers, func(i, j int) bool {
-			return servers[i].Hostname < servers[j].Hostname
+
+		serverAliveTmp := make([]*ServerNode, 0)
+		for _, s := range servers {
+			if time.Now().Sub(s.LocalLastSeen) < 5 * time.Second {
+				serverAliveTmp = append(serverAliveTmp, s)
+			}
+		}
+
+		sort.Slice(serverAliveTmp, func(i, j int) bool {
+			return serverAliveTmp[i].Hostname < serverAliveTmp[j].Hostname
 		})
 
+		serverAlive = serverAliveTmp
 
-		serverWeb := make([]*ServerNode, 0)
+		count++
+		time.Sleep(1 * time.Millisecond)
+	}
+}
+
+
+func startCliOutput(dump_interval uint32) {
+	count := 1
+	for {
+		servers := serverAlive
 
 		dump := ""
 		for _, s := range servers {
-			if time.Now().Sub(s.LocalLastSeen) < 5 * time.Second {
-				serverWeb = append(serverWeb, s)
-				dump = fmt.Sprintf("%s%s => %s - %s\n", dump, s.Hostname, s.LocalLastSeen, s.Ips)
-			}
+			dump = fmt.Sprintf("%s%s => %s - %s\n", dump, s.Hostname, s.LocalLastSeen, s.Ips)
 		}
 		util.MaoLog(util.INFO, fmt.Sprintf("========== %d ==========\n%s", count, dump))
-
-		serverWebShow = serverWeb
-
 
 		count++
 		time.Sleep(time.Duration(dump_interval) * time.Millisecond)
 	}
 }
+
 
 func startRestful(webAddr string) {
 	util.MaoLog(util.INFO, fmt.Sprintf("Starting web show %s ...", webAddr))
@@ -138,13 +151,13 @@ func startRestful(webAddr string) {
 		return
 	}
 }
-
 func showServers(c *gin.Context) {
-	serverTmp := serverWebShow
+	serverTmp := serverAlive
 	c.IndentedJSON(200, serverTmp)
 }
 func showServerPlain(c *gin.Context) {
-	serverTmp := serverWebShow
+	serverTmp := serverAlive
+
 	dump := "<html><meta http-equiv=\"refresh\" content=\"1\"><title>Mao Service Discovery</title><body>"
 	for _, s := range serverTmp {
 		dump = fmt.Sprintf("%s%s => %s - %s<br/>", dump, s.Hostname, s.LocalLastSeen, s.Ips)
@@ -155,7 +168,7 @@ func showServerPlain(c *gin.Context) {
 }
 
 
-func runServer(server *grpc.Server, listener net.Listener) {
+func runGrpcServer(server *grpc.Server, listener net.Listener) {
 	util.MaoLog(util.INFO, fmt.Sprintf("Server running %s ...", listener.Addr().String()))
 	if err := server.Serve(listener); err != nil {
 		util.MaoLog(util.ERROR, fmt.Sprintf("%s", err))
@@ -180,11 +193,12 @@ func RunServer(report_server_addr *net.IP, report_server_port uint32, web_server
 	pb.RegisterMaoServerDiscoveryServer(server, &RealMaoServerDiscoveryHWServer{
 		mergeChannel: mergeChannel,
 	})
-	go runServer(server, listener)
+	go runGrpcServer(server, listener)
 
 	go mergeAliveServer(mergeChannel, &serverInfo)
 
 	go startRestful(parent.GetAddrPort(web_server_addr, web_server_port))
+	go startCliOutput(dump_interval)
 
-	dumpAliveServer(&serverInfo, dump_interval)
+	updateServerAlive(&serverInfo)
 }
