@@ -11,7 +11,7 @@ import (
 )
 
 
-func RunGeneralClient(report_server_addr *net.IP, report_server_port uint32, report_interval uint32) {
+func RunGeneralClient(report_server_addr *net.IP, report_server_port uint32, report_interval uint32, silent bool) {
 	parent.MaoLog(parent.INFO, "Connect to center ...")
 	for {
 		serverAddr := parent.GetAddrPort(report_server_addr, report_server_port)
@@ -61,7 +61,9 @@ func RunGeneralClient(report_server_addr *net.IP, report_server_port uint32, rep
 				parent.MaoLog(parent.ERROR, fmt.Sprintf("Fail to report, %s", err))
 				break
 			}
-			parent.MaoLog(parent.INFO, fmt.Sprintf("ServerReport - %v", report))
+			if silent == false {
+				parent.MaoLog(parent.INFO, fmt.Sprintf("ServerReport - %v", report))
+			}
 			parent.MaoLog(parent.DEBUG, fmt.Sprintf("%d: Sent", count))
 			count++
 			time.Sleep(time.Duration(report_interval) * time.Millisecond)

@@ -11,6 +11,7 @@ import (
 )
 
 var (
+	silent bool
 	//main_server_addr net.IP
 	report_server_addr net.IP
 	report_server_port uint32
@@ -56,7 +57,7 @@ var generalClientCmd = &cobra.Command{
 
 		//fmt.Printf("---\n%v, %d\n", args, len(args))
 		//return
-		branch.RunGeneralClient(&report_server_addr, report_server_port, report_interval)
+		branch.RunGeneralClient(&report_server_addr, report_server_port, report_interval, silent)
 	},
 }
 
@@ -85,16 +86,15 @@ var serverCmd = &cobra.Command{
 		//
 		//fmt.Printf("---\n%v, %d\n", args, len(args))
 		//return
-		branch.RunServer(&report_server_addr, report_server_port, &web_server_addr, web_server_port, dump_interval, refresh_interval)
+		branch.RunServer(&report_server_addr, report_server_port, &web_server_addr, web_server_port, dump_interval, refresh_interval, silent)
 	},
-}
-
-func checkArgs() {
 }
 
 func init() {
 	rootCmd.PersistentFlags().String("report_server_addr","::1","2001:db8::1")
 	rootCmd.PersistentFlags().Uint32("report_server_port",28888,"28888")
+	rootCmd.PersistentFlags().Bool("silent", false,"false")
+
 
 	//serverCmd.Flags().String("main_server_addr","::","::")
 	serverCmd.Flags().String("web_server_addr","::","::")
@@ -124,6 +124,12 @@ func readRootArgs(cmd *cobra.Command) error {
 	}
 	if report_server_port < 1 || report_server_port > 65535 {
 		return errors.New("report_server_port is invalid")
+	}
+
+
+	silent, err = rootCmd.PersistentFlags().GetBool("silent")
+	if err != nil {
+		return err
 	}
 
 	return nil

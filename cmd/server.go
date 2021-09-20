@@ -176,7 +176,7 @@ func runGrpcServer(server *grpc.Server, listener net.Listener) {
 	util.MaoLog(util.INFO, "Serve over")
 }
 
-func RunServer(report_server_addr *net.IP, report_server_port uint32, web_server_addr *net.IP, web_server_port uint32, dump_interval uint32, refresh_interval uint32) {
+func RunServer(report_server_addr *net.IP, report_server_port uint32, web_server_addr *net.IP, web_server_port uint32, dump_interval uint32, refresh_interval uint32, silent bool) {
 
 	log.SetOutput(os.Stdout)
 
@@ -198,7 +198,10 @@ func RunServer(report_server_addr *net.IP, report_server_port uint32, web_server
 	go mergeAliveServer(mergeChannel, &serverInfo)
 
 	go startRestful(parent.GetAddrPort(web_server_addr, web_server_port))
-	go startCliOutput(dump_interval)
+
+	if silent == false {
+		go startCliOutput(dump_interval)
+	}
 
 	updateServerAlive(&serverInfo, refresh_interval)
 }
