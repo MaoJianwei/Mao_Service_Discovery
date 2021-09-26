@@ -14,6 +14,7 @@ message ServerReport {
     string hostname = 2;
     repeated string ips = 3;
     string now_datetime = 4;
+    string aux_data = 5; // other Incubator or Aux data
 }
 
 message ServerResponse {

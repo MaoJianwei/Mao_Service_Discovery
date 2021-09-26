@@ -33,6 +33,8 @@ type ServerNode struct {
 	Ips            []string
 	RealClientAddr string
 
+	OtherData string
+
 	ServerDateTime string
 	LocalLastSeen  time.Time
 }
@@ -79,6 +81,7 @@ func dealRecv(reportStream pb.MaoServerDiscovery_ReportServer, mergeChannel chan
 				Hostname:       report.GetHostname(),
 				Ips:            report.GetIps(),
 				ServerDateTime: report.GetNowDatetime(),
+				OtherData:		report.GetAuxData(),
 				RealClientAddr: clientAddr,
 				LocalLastSeen:  time.Now(),
 			}
@@ -160,7 +163,7 @@ func showServerPlain(c *gin.Context) {
 
 	dump := "<html><meta http-equiv=\"refresh\" content=\"1\"><title>Mao Service Discovery</title><body>"
 	for _, s := range serverTmp {
-		dump = fmt.Sprintf("%s%s => %s - %s<br/>", dump, s.Hostname, s.LocalLastSeen, s.Ips)
+		dump = fmt.Sprintf("%s%s => %s - %s %s<br/>", dump, s.Hostname, s.LocalLastSeen, s.Ips, s.OtherData)
 	}
 	dump += "</body></html>"
 	c.Header("Content-Type", "text/html; charset=utf-8")

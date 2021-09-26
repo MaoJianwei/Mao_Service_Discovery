@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"net"
 	"os"
+	"runtime"
 )
 
 var (
@@ -20,6 +21,8 @@ var (
 	web_server_port uint32
 	dump_interval uint32
 	refresh_interval uint32
+
+	nat66Gateway bool
 )
 
 var rootCmd = &cobra.Command{
@@ -46,18 +49,15 @@ var generalClientCmd = &cobra.Command{
 			util.MaoLog(util.ERROR, fmt.Sprintf("Wrong Args for general client: %s", err))
 			return
 		}
-		//fmt.Printf("%v\n%v\n%v\n%v\n%v\n%v\n%v\n",
-		//	report_server_addr,
-		//	report_server_port,
-		//	main_server_addr,
-		//	web_server_addr,
-		//	web_server_port,
-		//	dump_interval,
-		//	report_interval)
 
-		//fmt.Printf("---\n%v, %d\n", args, len(args))
-		//return
-		branch.RunGeneralClient(&report_server_addr, report_server_port, report_interval, silent)
+		if nat66Gateway == true {
+			if runtime.GOOS != `linux` || os.Getgid() != 0 {
+				util.MaoLog(util.ERROR, "nat66Gateway is usable only in linux with root privilege")
+				return
+			}
+		}
+
+		branch.RunGeneralClient(&report_server_addr, report_server_port, report_interval, silent, nat66Gateway)
 	},
 }
 
@@ -105,6 +105,7 @@ func init() {
 
 
 	generalClientCmd.Flags().Uint32("report_interval", 1000, "1000")
+	generalClientCmd.Flags().Bool("aux_ipv6_nat66_stat", false, "Usable only in linux with root privilege")
 }
 
 func readRootArgs(cmd *cobra.Command) error {
@@ -199,6 +200,11 @@ func readGeneralClientArgs(cmd *cobra.Command) error {
 	}
 	if report_interval < 1 {
 		return errors.New("report_interval is invalid")
+	}
+
+	nat66Gateway, err = cmd.Flags().GetBool("aux_ipv6_nat66_stat")
+	if err != nil {
+		return err
 	}
 
 	return nil
