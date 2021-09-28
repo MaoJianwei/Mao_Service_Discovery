@@ -23,6 +23,10 @@ var (
 	refresh_interval uint32
 
 	nat66Gateway bool
+	nat66Persistent bool
+	influxdbUrl string
+	influxdbOrgBucket string
+	influxdbToken string
 )
 
 var rootCmd = &cobra.Command{
@@ -57,7 +61,8 @@ var generalClientCmd = &cobra.Command{
 			}
 		}
 
-		branch.RunGeneralClient(&report_server_addr, report_server_port, report_interval, silent, nat66Gateway)
+		branch.RunGeneralClient(&report_server_addr, report_server_port, report_interval, silent,
+			nat66Gateway, nat66Persistent, influxdbUrl, influxdbOrgBucket, influxdbToken)
 	},
 }
 
@@ -105,7 +110,12 @@ func init() {
 
 
 	generalClientCmd.Flags().Uint32("report_interval", 1000, "1000")
-	generalClientCmd.Flags().Bool("aux_ipv6_nat66_stat", false, "Usable only in linux with root privilege")
+	generalClientCmd.Flags().Bool("enable_aux_nat66_stat", false, "Usable only in linux with root privilege")
+
+	generalClientCmd.Flags().Bool("enable_nat66_persistent", false, "Enable to upload stat to Influxdb")
+	generalClientCmd.Flags().String("influxdb_url","","https://domain-or-ip:port")
+	generalClientCmd.Flags().String("influxdb_org_bucket","","same name for Org and Bucket")
+	generalClientCmd.Flags().String("influxdb_token","","token string from Influxdb")
 }
 
 func readRootArgs(cmd *cobra.Command) error {
@@ -202,9 +212,40 @@ func readGeneralClientArgs(cmd *cobra.Command) error {
 		return errors.New("report_interval is invalid")
 	}
 
-	nat66Gateway, err = cmd.Flags().GetBool("aux_ipv6_nat66_stat")
+	nat66Gateway, err = cmd.Flags().GetBool("enable_aux_nat66_stat")
 	if err != nil {
 		return err
+	}
+
+
+
+	nat66Persistent, err = cmd.Flags().GetBool("enable_nat66_persistent")
+	if err != nil {
+		return err
+	}
+
+	influxdbUrl, err = cmd.Flags().GetString("influxdb_url")
+	if err != nil {
+		return err
+	}
+	if nat66Persistent && influxdbUrl == "" {
+		return errors.New("influxdb_url is invalid")
+	}
+
+	influxdbOrgBucket, err = cmd.Flags().GetString("influxdb_org_bucket")
+	if err != nil {
+		return err
+	}
+	if nat66Persistent && influxdbOrgBucket == "" {
+		return errors.New("influxdb_org_bucket is invalid")
+	}
+
+	influxdbToken, err = cmd.Flags().GetString("influxdb_token")
+	if err != nil {
+		return err
+	}
+	if nat66Persistent && influxdbToken == "" {
+		return errors.New("influxdb_token is invalid")
 	}
 
 	return nil
