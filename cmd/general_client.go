@@ -5,6 +5,7 @@ import (
 	parent "MaoServerDiscovery/util"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	influxdb2Api "github.com/influxdata/influxdb-client-go/v2/api"
+	"strings"
 
 	"context"
 	"fmt"
@@ -15,6 +16,9 @@ import (
 	"time"
 )
 
+var (
+	envTemp float64
+)
 
 /*
     return v6In,v6Out,error
@@ -58,16 +62,63 @@ func nat66UploadInfluxdb(writeAPI *influxdb2Api.WriteAPI, v6In uint64, v6Out uin
 	//(*writeAPI).Flush()
 }
 
+func envTempUploadInfluxdb(writeAPI *influxdb2Api.WriteAPI, envTemperature float64) {
+	// write point asynchronously
+	(*writeAPI).WritePoint(
+		influxdb2.NewPointWithMeasurement("Temperature").
+			AddTag("Geo", "Beijing-HQ").
+			AddField("env", envTemperature).
+			SetTime(time.Now()))
+	// Not flush writes, avoid blocking my thread, then the lib's thread will block itself.
+	//(*writeAPI).Flush()
+}
+
+func updateEnvironmentTemperature() {
+	for {
+		ccc := exec.Command("/bin/bash", "-c", "cat /sys/bus/w1/devices/28-00141093caff/w1_slave")
+		w1Data, err := ccc.CombinedOutput()
+		if err == nil {
+
+			w1DataSplit := strings.Split(string(w1Data), "\n")
+			if len(w1DataSplit) == 3 {
+
+				tempText := strings.Split(w1DataSplit[1], "=")
+				if len(tempText) == 2 {
+
+					temp, err := strconv.ParseFloat(tempText[1], 64)
+					if err == nil {
+						envTemp = temp / 1000
+						parent.MaoLog(parent.DEBUG, fmt.Sprintf("Get envTemp: %f, %f", temp, envTemp))
+					} else {
+						parent.MaoLog(parent.WARN, "Fail to parse temperature text, " + err.Error())
+					}
+				} else {
+					parent.MaoLog(parent.WARN, "Fail to parse 1-line protocol data slice, " + err.Error())
+				}
+			} else {
+				parent.MaoLog(parent.WARN, "Fail to parse 1-line protocol data, " + err.Error())
+			}
+		} else {
+			parent.MaoLog(parent.WARN, "Fail to get 1-line protocol data, " + err.Error())
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+}
+
 func RunGeneralClient(report_server_addr *net.IP, report_server_port uint32, report_interval uint32, silent bool,
-	nat66Gateway bool, nat66Persistent bool, influxdbUrl string, influxdbOrgBucket string, influxdbToken string) {
+	nat66Gateway bool, nat66Persistent bool, influxdbUrl string, influxdbOrgBucket string, influxdbToken string,
+	envTempMonitor bool, envTempPersistent bool) {
 
 	var influxdbClient influxdb2.Client
 	var influxdbWriteAPI influxdb2Api.WriteAPI
-	if nat66Persistent == true {
+	if nat66Persistent {
 		parent.MaoLog(parent.INFO, "Initiate influxdb client ...")
 		influxdbClient = influxdb2.NewClient(influxdbUrl, influxdbToken)
 		defer influxdbClient.Close()
 		influxdbWriteAPI = influxdbClient.WriteAPI(influxdbOrgBucket, influxdbOrgBucket)
+	}
+	if envTempMonitor {
+		go updateEnvironmentTemperature()
 	}
 
 	parent.MaoLog(parent.INFO, "Connect to center ...")
@@ -113,14 +164,22 @@ func RunGeneralClient(report_server_addr *net.IP, report_server_port uint32, rep
 				Hostname:    hostname,
 				Ips:         ips,
 				NowDatetime: time.Now().String(),
+				AuxData: "",
 			}
 			if nat66Gateway {
 				v6In, v6Out, err := getNat66GatewayData()
 				if err == nil {
-					report.AuxData = fmt.Sprintf("{ \"v6In\":%d, \"v6Out\":%d}", v6In, v6Out)
+					report.AuxData = fmt.Sprintf("%s {\"v6In\":%d, \"v6Out\":%d}", report.AuxData, v6In, v6Out)
 					if nat66Persistent {
 						nat66UploadInfluxdb(&influxdbWriteAPI, v6In, v6Out)
 					}
+				}
+			}
+			if envTempMonitor {
+				env := envTemp
+				report.AuxData = fmt.Sprintf("%s {\"envTemp\":%f}", report.AuxData, env)
+				if envTempPersistent {
+					envTempUploadInfluxdb(&influxdbWriteAPI, env)
 				}
 			}
 
