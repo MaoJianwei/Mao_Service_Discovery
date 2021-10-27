@@ -36,6 +36,10 @@ func GetUnicastIp() ([]string, error) {
 	return ret, nil
 }
 
+func JudgeIPv6Addr(addr *net.IPAddr) bool {
+	return addr.IP.To4() == nil
+}
+
 func JudgeIPv6(ip *net.IP) bool {
 	return ip.To4() == nil
 }
