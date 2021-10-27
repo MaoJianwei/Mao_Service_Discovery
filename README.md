@@ -1,4 +1,6 @@
 # Mao Service Discovery
+[![Go](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/go.yml/badge.svg)](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/go.yml) [![CodeQL](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/codeql-analysis.yml)
+
 Discover your service by two methods:
 
 1. Client-Server mode, using gRPC stream.
