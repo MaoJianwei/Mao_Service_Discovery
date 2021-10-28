@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<!--enctype="application/json"-->
+<form action="/addServiceIp" method="post">
+    IPv4<br/>
+    <textarea rows="6" cols="50" name="ipv4"></textarea><br/>
+    <br/>
+    IPv6<br/>
+    <textarea rows="6" cols="50" name="ipv6"></textarea><br/>
+    <input type="submit" value="Submit" />
+</form>
+<form action="/delServiceIp" method="post">
+    IPv4 Status<br/>
+    <textarea rows="6" cols="50" name="ipv4"></textarea><br/>
+    <br/>
+    IPv6 Status<br/>
+    <textarea rows="6" cols="50" name="ipv6"></textarea><br/>
+    <input type="submit" value="Submit" />
+</form>
+
+<div id="services"></div>
+<script src="/static/jquery-3.6.0.min.js" type="text/javascript"></script>
+<script>
+    $.get("/showServiceIP",function (response, status, xhr) {
+        services = ""
+        $.each(response, function(index, item) {
+            services += "<form action=\"/delServiceIp\" method=\"post\">"
+            services += "<input type=\"submit\" value=\"Submit\" />"
+            services += "<input type=\"text\">" + item["Address"] + "</input>"
+            services += "</form>"
+        })
+        $("#services").html(services)
+    })
+</script>
+
+</body>
+</html>

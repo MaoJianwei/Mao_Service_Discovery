@@ -16,29 +16,37 @@ import (
 var (
 	addServiceChan chan string
 	delServiceChan chan string
+	configService []*MaoIcmpService
 )
 
-type Service struct {
-	address string
+const (
+	URL_CONFIG_HOMEPAGE        string = "/"
+	URL_CONFIG_ADD_SERVICE_IP  string = "/addServiceIp"
+	URL_CONFIG_DEL_SERVICE_IP  string = "/delServiceIp"
+	URL_CONFIG_SHOW_SERVICE_IP string = "/showServiceIP"
+)
 
-	alive bool
+type MaoIcmpService struct {
+	Address string
+
+	alive    bool
 	lastSeen string
 
 	detectCount uint64
 	reportCount uint64
 
-	rttDuration uint32
+	rttDuration          uint32
 	rttOutboundTimestamp time.Time
 }
 
 type IcmpDetectModule struct {
-	connV4 *icmp.PacketConn
-	connV6 *icmp.PacketConn
+	connV4       *icmp.PacketConn
+	connV6       *icmp.PacketConn
 	serviceStore sync.Map // address_string -> Service object
 
 	controlPort uint32 // Todo: can be moved out
-	addChan *chan string
-	delChan *chan string
+	addChan     *chan string
+	delChan     *chan string
 }
 
 func (m *IcmpDetectModule) sendIcmpLoop() {
@@ -47,7 +55,7 @@ func (m *IcmpDetectModule) sendIcmpLoop() {
 		util.MaoLog(util.DEBUG, fmt.Sprintf("Detect Round %d", round))
 		m.serviceStore.Range(func(key, value interface{}) bool {
 			address := key.(string)
-			service := value.(Service)
+			service := value.(*MaoIcmpService)
 
 			icmpPayloadData := append([]byte(time.Now().String()))
 			echoMsg := icmp.Echo{
@@ -102,14 +110,26 @@ func (m *IcmpDetectModule) controlLoop() {
 		util.MaoLog(util.DEBUG, "Wait for control input ...")
 		select {
 		case addService := <- *m.addChan:
-			util.MaoLog(util.DEBUG,fmt.Sprintf("Get new service %s", addService))
+			if _, ok := m.serviceStore.Load(addService); !ok {
+				m.serviceStore.Store(addService, &MaoIcmpService{
+					Address:              addService,
+					alive:                false,
+					lastSeen:             "",
+					detectCount:          0,
+					reportCount:          0,
+					rttDuration:          0,
+					rttOutboundTimestamp: time.Time{},
+				})
+				util.MaoLog(util.DEBUG, fmt.Sprintf("Get new service %s", addService))
+			}
 		case delService := <- *m.delChan:
-			util.MaoLog(util.DEBUG,fmt.Sprintf("Del service %s", delService))
+			m.serviceStore.Delete(delService)
+			util.MaoLog(util.DEBUG, fmt.Sprintf("Del service %s", delService))
 		}
 	}
 }
 
-func (m *IcmpDetectModule) InitIcmpModule () bool {
+func (m *IcmpDetectModule) InitIcmpModule() bool {
 	var err error
 	m.connV4, err = icmp.ListenPacket("ip4:icmp", "0.0.0.0")
 	if err != nil {
@@ -132,19 +152,26 @@ func (m *IcmpDetectModule) InitIcmpModule () bool {
 	return true
 }
 
+func showServiceIp(c *gin.Context) {
+	c.JSON(200, configService)
+}
 
 func showConfigPage(c *gin.Context) {
 	c.HTML(200, "index.html", nil)
 }
 
-func addServiceIp(c *gin.Context) {
+func processServiceIp(c *gin.Context) {
 	v4Ip, ok := c.GetPostForm("ipv4")
 	if ok {
 		v4IpArr := strings.Fields(v4Ip)
 		for _, s := range v4IpArr {
 			ip := net.ParseIP(s)
 			if ip != nil {
-				addServiceChan <- s
+				if c.FullPath() == URL_CONFIG_ADD_SERVICE_IP {
+					addServiceChan <- s
+				} else {
+					delServiceChan <- s
+				}
 			}
 		}
 		log.Printf("\n%v", v4IpArr)
@@ -155,7 +182,11 @@ func addServiceIp(c *gin.Context) {
 		for _, s := range v6IpArr {
 			ip := net.ParseIP(s)
 			if ip != nil {
-				addServiceChan <- s
+				if c.FullPath() == URL_CONFIG_ADD_SERVICE_IP {
+					addServiceChan <- s
+				} else {
+					delServiceChan <- s
+				}
 			}
 		}
 		log.Printf("\n%v", v6IpArr)
@@ -165,26 +196,29 @@ func addServiceIp(c *gin.Context) {
 func runRestControlInterface(controlPort uint32) {
 	gin.SetMode(gin.ReleaseMode)
 	restful := gin.Default()
-	restful.LoadHTMLFiles("index.html")
-	restful.GET("/", showConfigPage)
-	restful.POST("/addServiceIp", addServiceIp)
+	restful.LoadHTMLFiles("resource/index.html")
+	restful.Static("/static/", "resource")
+
+	restful.GET(URL_CONFIG_HOMEPAGE, showConfigPage)
+	restful.GET(URL_CONFIG_SHOW_SERVICE_IP, showServiceIp)
+	restful.POST(URL_CONFIG_ADD_SERVICE_IP, processServiceIp)
+	restful.POST(URL_CONFIG_DEL_SERVICE_IP, processServiceIp)
+
 	err := restful.Run(fmt.Sprintf("[::]:%d", controlPort))
 	if err != nil {
 		log.Printf("qingdao %s", err.Error())
 	}
 }
 
-
 func main() {
 
 	addServiceChan = make(chan string, 50)
 	delServiceChan = make(chan string, 50)
 
-
 	icmpDetectModule := &IcmpDetectModule{
-		addChan: &addServiceChan,
-		delChan: &delServiceChan,
-		controlPort:  2468,
+		addChan:     &addServiceChan,
+		delChan:     &delServiceChan,
+		controlPort: 2468,
 	}
 
 	icmpDetectModule.InitIcmpModule()
@@ -193,5 +227,11 @@ func main() {
 
 	for {
 		time.Sleep(1 * time.Second)
+		newConfigService := []*MaoIcmpService{}
+		icmpDetectModule.serviceStore.Range(func(_, value interface{}) bool {
+			newConfigService = append(newConfigService, value.(*MaoIcmpService))
+			return true
+		})
+		configService = newConfigService
 	}
 }
