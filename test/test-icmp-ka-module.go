@@ -6,8 +6,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"
-	"log"
+	"golang.org/x/net/ipv6"
 	"net"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -16,7 +17,7 @@ import (
 var (
 	addServiceChan chan string
 	delServiceChan chan string
-	configService []*MaoIcmpService
+	configService  []*MaoIcmpService
 )
 
 const (
@@ -24,19 +25,25 @@ const (
 	URL_CONFIG_ADD_SERVICE_IP  string = "/addServiceIp"
 	URL_CONFIG_DEL_SERVICE_IP  string = "/delServiceIp"
 	URL_CONFIG_SHOW_SERVICE_IP string = "/showServiceIP"
+
+	PROTO_ICMP    = 1
+	PROTO_ICMP_V6 = 58
+
+	ICMP_DETECT_ID    = 0x1994
+	ICMP_V6_DETECT_ID = 0x1996
 )
 
 type MaoIcmpService struct {
 	Address string
 
-	alive    bool
-	lastSeen string
+	Alive    bool
+	LastSeen time.Time
 
-	detectCount uint64
-	reportCount uint64
+	DetectCount uint64
+	ReportCount uint64
 
-	rttDuration          uint32
-	rttOutboundTimestamp time.Time
+	RttDuration          int64
+	RttOutboundTimestamp time.Time
 }
 
 type IcmpDetectModule struct {
@@ -53,19 +60,41 @@ func (m *IcmpDetectModule) sendIcmpLoop() {
 	round := 1
 	for {
 		util.MaoLog(util.DEBUG, fmt.Sprintf("Detect Round %d", round))
-		m.serviceStore.Range(func(key, value interface{}) bool {
-			address := key.(string)
+		m.serviceStore.Range(func(_, value interface{}) bool {
 			service := value.(*MaoIcmpService)
 
-			icmpPayloadData := append([]byte(time.Now().String()))
+			addr, err := net.ResolveIPAddr("ip", service.Address)
+			if err != nil {
+				util.MaoLog(util.WARN, fmt.Sprintf("Fail to ResolveIPAddr v4v6Addr: %s", err.Error()))
+				return true // for continuous iteration
+			}
+
+			var msgType icmp.Type
+			var echoId int
+			var conn *icmp.PacketConn
+			if util.JudgeIPv6Addr(addr) {
+				msgType = ipv6.ICMPTypeEchoRequest
+				echoId = ICMP_V6_DETECT_ID
+				conn = m.connV6
+			} else {
+				msgType = ipv4.ICMPTypeEcho
+				echoId = ICMP_DETECT_ID
+				conn = m.connV4
+			}
+
+
+			// To build and send ICMP Request.
+
+			service.DetectCount++
+			icmpPayloadData := []byte(time.Now().String())
 			echoMsg := icmp.Echo{
-				ID:   0x1994,                   // 0xabcd,
-				Seq:  int(service.detectCount), // 0x1994,
+				ID:   echoId,
+				Seq:  int(service.DetectCount),
 				Data: icmpPayloadData,
 			}
 
 			icmpMsg := icmp.Message{
-				Type: ipv4.ICMPTypeEcho,
+				Type: msgType,
 				Code: 0,
 				//Checksum: 0,
 				Body: &echoMsg,
@@ -74,26 +103,17 @@ func (m *IcmpDetectModule) sendIcmpLoop() {
 			// do le->be in the Marshal
 			icmpMsgByte, err := icmpMsg.Marshal(nil)
 			if err != nil {
-				log.Printf("Fail to marshal icmpMsg: %s", err.Error())
+				util.MaoLog(util.WARN, fmt.Sprintf("Fail to marshal icmpMsg: %s", err.Error()))
 				return true
 			}
 
-			addr, err := net.ResolveIPAddr("ip", address)
+			service.RttOutboundTimestamp = time.Now()
+			_, err = conn.WriteTo(icmpMsgByte, addr)
 			if err != nil {
-				log.Printf("Fail to ResolveIPAddr v4Addr: %s", err.Error())
+				util.MaoLog(util.WARN, fmt.Sprintf("Fail to WriteTo connV6: %s", err.Error()))
 				return true
 			}
 
-			if util.JudgeIPv6Addr(addr) {
-
-			} else {
-				count, err := m.connV4.WriteTo(icmpMsgByte, addr)
-				if err != nil {
-					log.Printf("Fail to WriteTo connV4: %s", err.Error())
-					return true
-				}
-				log.Printf("WriteTo connV4 %d: %s: %s --- %v \n--- %v", count, addr.String(), addr.Network(), icmpMsgByte, icmpMsg)
-			}
 			return true
 		})
 		time.Sleep(500 * time.Millisecond)
@@ -101,30 +121,81 @@ func (m *IcmpDetectModule) sendIcmpLoop() {
 	}
 }
 
-func (m *IcmpDetectModule) receiveProcessIcmpLoop() {
+/**
+ * For IPv6: PROTO_ICMP, m.connV4
+ * For IPv4: PROTO_ICMP_V6, m.connV6
+ */
+func (m *IcmpDetectModule) receiveProcessIcmpLoop(protoNum int, conn *icmp.PacketConn) {
+	freeze_period := 500 // ms
+	recvBuf := make([]byte, 2000)
+	for {
+		count, addr, err := conn.ReadFrom(recvBuf)
+		lastseen := time.Now()
+		if err != nil {
+			util.MaoLog(util.WARN, fmt.Sprintf("Fail to recv ICMP, freeze %d ms, %s", freeze_period, err.Error()))
+			time.Sleep(time.Duration(freeze_period) * time.Millisecond)
+			continue
+		}
 
+		msg, err := icmp.ParseMessage(protoNum, recvBuf)
+		if err != nil {
+			util.MaoLog(util.WARN, fmt.Sprintf("Fail to parse ICMP, %s", err.Error()))
+			continue
+		}
+
+		icmpEcho, ok := msg.Body.(*icmp.Echo)
+		if !ok {
+			continue
+		}
+		util.MaoLog(util.DEBUG, fmt.Sprintf("%v, %v = %v, %v, %v, %v, %v, %v", count, addr, msg.Type, msg.Code, msg.Checksum, icmpEcho.ID, icmpEcho.Seq, icmpEcho.Data))
+
+		var addrStr string
+		if protoNum == PROTO_ICMP_V6 {
+			addrStr = strings.Split(addr.String(), "%")[0] // for ipv6 link-local address, it is suffixed by % and interface name.
+		} else {
+			addrStr = addr.String()
+		}
+		value, ok := m.serviceStore.Load(addrStr)
+		if ok && value != nil {
+			service := value.(*MaoIcmpService)
+			service.Alive = true
+			service.LastSeen = lastseen
+			service.RttDuration = service.LastSeen.Sub(service.RttOutboundTimestamp).Nanoseconds()
+			service.ReportCount++
+		}
+	}
 }
 
 func (m *IcmpDetectModule) controlLoop() {
+	checkPeriod := 1 * time.Second
+	checkTimer := time.NewTimer(checkPeriod)
 	for {
-		util.MaoLog(util.DEBUG, "Wait for control input ...")
 		select {
-		case addService := <- *m.addChan:
+		case addService := <-*m.addChan:
 			if _, ok := m.serviceStore.Load(addService); !ok {
 				m.serviceStore.Store(addService, &MaoIcmpService{
 					Address:              addService,
-					alive:                false,
-					lastSeen:             "",
-					detectCount:          0,
-					reportCount:          0,
-					rttDuration:          0,
-					rttOutboundTimestamp: time.Time{},
+					Alive:                false,
+					LastSeen:             time.Unix(0, 0),
+					DetectCount:          0,
+					ReportCount:          0,
+					RttDuration:          0,
+					RttOutboundTimestamp: time.Time{},
 				})
 				util.MaoLog(util.DEBUG, fmt.Sprintf("Get new service %s", addService))
 			}
-		case delService := <- *m.delChan:
+		case delService := <-*m.delChan:
 			m.serviceStore.Delete(delService)
 			util.MaoLog(util.DEBUG, fmt.Sprintf("Del service %s", delService))
+		case <-checkTimer.C:
+			m.serviceStore.Range(func(key, value interface{}) bool {
+				service := value.(*MaoIcmpService)
+				if service.Alive && time.Since(service.LastSeen) > 3*time.Second {
+					service.Alive = false
+				}
+				return true
+			})
+			checkTimer.Reset(checkPeriod)
 		}
 	}
 }
@@ -133,27 +204,32 @@ func (m *IcmpDetectModule) InitIcmpModule() bool {
 	var err error
 	m.connV4, err = icmp.ListenPacket("ip4:icmp", "0.0.0.0")
 	if err != nil {
-		log.Printf("Listen for v4 error: %s", err.Error())
+		util.MaoLog(util.ERROR, fmt.Sprintf("Fail to listen ICMP, %s", err.Error()))
 		return false
 	}
-	log.Printf("v4 conn: %v", m.connV4)
+	util.MaoLog(util.INFO, "Listen ICMP ok")
 
 	m.connV6, err = icmp.ListenPacket("ip6:ipv6-icmp", "::")
 	if err != nil {
-		log.Printf("Listen for v6 error: %s", err.Error())
+		util.MaoLog(util.ERROR, fmt.Sprintf("Fail to listen ICMPv6, %s", err.Error()))
 		return false
 	}
-	log.Printf("v6 conn: %v", m.connV6)
+	util.MaoLog(util.INFO, "Listen ICMPv6 ok")
 
-	//go m.sendIcmpLoop()
-	//go m.receiveProcessIcmpLoop()
+	go m.receiveProcessIcmpLoop(PROTO_ICMP, m.connV4)
+	go m.receiveProcessIcmpLoop(PROTO_ICMP_V6, m.connV6)
+	go m.sendIcmpLoop()
 	go m.controlLoop()
 
 	return true
 }
 
 func showServiceIp(c *gin.Context) {
-	c.JSON(200, configService)
+	tmp := configService
+	sort.Slice(tmp, func(i, j int) bool {
+		return tmp[i].Address < tmp[j].Address
+	})
+	c.JSON(200, tmp)
 }
 
 func showConfigPage(c *gin.Context) {
@@ -161,7 +237,7 @@ func showConfigPage(c *gin.Context) {
 }
 
 func processServiceIp(c *gin.Context) {
-	v4Ip, ok := c.GetPostForm("ipv4")
+	v4Ip, ok := c.GetPostForm("ipv4v6")
 	if ok {
 		v4IpArr := strings.Fields(v4Ip)
 		for _, s := range v4IpArr {
@@ -174,23 +250,8 @@ func processServiceIp(c *gin.Context) {
 				}
 			}
 		}
-		log.Printf("\n%v", v4IpArr)
 	}
-	v6Ip, ok := c.GetPostForm("ipv6")
-	if ok {
-		v6IpArr := strings.Fields(v6Ip)
-		for _, s := range v6IpArr {
-			ip := net.ParseIP(s)
-			if ip != nil {
-				if c.FullPath() == URL_CONFIG_ADD_SERVICE_IP {
-					addServiceChan <- s
-				} else {
-					delServiceChan <- s
-				}
-			}
-		}
-		log.Printf("\n%v", v6IpArr)
-	}
+	c.HTML(200, "index.html", nil)
 }
 
 func runRestControlInterface(controlPort uint32) {
@@ -206,12 +267,11 @@ func runRestControlInterface(controlPort uint32) {
 
 	err := restful.Run(fmt.Sprintf("[::]:%d", controlPort))
 	if err != nil {
-		log.Printf("qingdao %s", err.Error())
+		util.MaoLog(util.ERROR, fmt.Sprintf("Fail to run config server, %s", err.Error()))
 	}
 }
 
 func main() {
-
 	addServiceChan = make(chan string, 50)
 	delServiceChan = make(chan string, 50)
 
