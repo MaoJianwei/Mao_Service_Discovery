@@ -1,6 +1,7 @@
 package branch
 
 import (
+	icmpKa "MaoServerDiscovery/cmd/lib/IcmpKa"
 	pb "MaoServerDiscovery/grpc.maojianwei.com/server/discovery/api"
 	"MaoServerDiscovery/util"
 	parent "MaoServerDiscovery/util"
@@ -148,10 +149,12 @@ func startRestful(webAddr string) {
 	restful := gin.Default()
 	restful.GET("/json", showServers)
 	restful.GET("/", showServerPlain)
+
+	icmpKa.ConfigRestControlInterface(restful)
+
 	err := restful.Run(webAddr)
 	if err != nil {
 		util.MaoLog(util.ERROR, fmt.Sprintf("Fail to run rest server, %s", err))
-		return
 	}
 }
 func showServers(c *gin.Context) {
@@ -170,7 +173,6 @@ func showServerPlain(c *gin.Context) {
 	c.String(200, dump)
 }
 
-
 func runGrpcServer(server *grpc.Server, listener net.Listener) {
 	util.MaoLog(util.INFO, fmt.Sprintf("Server running %s ...", listener.Addr().String()))
 	if err := server.Serve(listener); err != nil {
@@ -183,6 +185,7 @@ func RunServer(report_server_addr *net.IP, report_server_port uint32, web_server
 
 	log.SetOutput(os.Stdout)
 
+	//
 	mergeChannel := make(chan *ServerNode, 1024)
 	serverInfo := sync.Map{}
 
@@ -199,6 +202,16 @@ func RunServer(report_server_addr *net.IP, report_server_port uint32, web_server
 	go runGrpcServer(server, listener)
 
 	go mergeAliveServer(mergeChannel, &serverInfo)
+
+	// ====== ICMP KA module ======
+	addServiceChan := make(chan string, 50)
+	delServiceChan := make(chan string, 50)
+	icmpDetectModule := &icmpKa.IcmpDetectModule{
+		AddChan:     &addServiceChan,
+		DelChan:     &delServiceChan,
+	}
+	icmpDetectModule.InitIcmpModule()
+	// ============================
 
 	go startRestful(parent.GetAddrPort(web_server_addr, web_server_port))
 
