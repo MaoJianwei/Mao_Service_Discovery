@@ -1,0 +1,73 @@
+//func (m *IcmpDetectModule) receiveProcessIcmpLoopV4() {
+//	freeze_period := 500 // ms
+//	recvBuf := make([]byte, 2000)
+//	for {
+//		count, addr, err := m.connV4.ReadFrom(recvBuf)
+//		lastseen := time.Now()
+//		if err != nil {
+//			util.MaoLog(util.WARN, fmt.Sprintf("Fail to recv ICMP, freeze %d ms, %s", freeze_period, err.Error()))
+//			time.Sleep(time.Duration(freeze_period) * time.Millisecond)
+//			continue
+//		}
+//
+//		msg, err := icmp.ParseMessage(PROTO_ICMP, recvBuf)
+//		if err != nil {
+//			util.MaoLog(util.WARN, fmt.Sprintf("Fail to parse ICMP, %s", err.Error()))
+//			continue
+//		}
+//
+//		icmpEcho, ok := msg.Body.(*icmp.Echo)
+//		if !ok {
+//			continue
+//		}
+//		util.MaoLog(util.DEBUG, fmt.Sprintf("%v, %v = %v, %v, %v, %v, %v, %v", count, addr, msg.Type, msg.Code, msg.Checksum, icmpEcho.ID, icmpEcho.Seq, icmpEcho.Data))
+//
+//		value, ok := m.serviceStore.Load(addr.String())
+//		if ok && value != nil {
+//			service := value.(*MaoIcmpService)
+//			service.Alive = true
+//			service.LastSeen = lastseen
+//			service.RttDuration = service.LastSeen.Sub(service.RttOutboundTimestamp).Nanoseconds()
+//			service.ReportCount++
+//		}
+//	}
+//}
+//func (m *IcmpDetectModule) receiveProcessIcmpLoopV6() {
+//
+//	//m.connV4.ReadFrom()
+//	//
+//	//icmp.ParseMessage(PROTO_ICMP_V6, recvBuf)
+//
+//	freeze_period := 500 // ms
+//	recvBuf := make([]byte, 2000)
+//	for {
+//		count, addr, err := m.connV6.ReadFrom(recvBuf)
+//		lastseen := time.Now()
+//		if err != nil {
+//			util.MaoLog(util.WARN, fmt.Sprintf("Fail to recv ICMP, freeze %d ms, %s", freeze_period, err.Error()))
+//			time.Sleep(time.Duration(freeze_period) * time.Millisecond)
+//			continue
+//		}
+//
+//		msg, err := icmp.ParseMessage(PROTO_ICMP_V6, recvBuf)
+//		if err != nil {
+//			util.MaoLog(util.WARN, fmt.Sprintf("Fail to parse ICMP, %s", err.Error()))
+//			continue
+//		}
+//
+//		icmpEcho, ok := msg.Body.(*icmp.Echo)
+//		if !ok {
+//			continue
+//		}
+//		util.MaoLog(util.DEBUG, fmt.Sprintf("%v, %v = %v, %v, %v, %v, %v, %v", count, addr, msg.Type, msg.Code, msg.Checksum, icmpEcho.ID, icmpEcho.Seq, icmpEcho.Data))
+//
+//		value, ok := m.serviceStore.Load(addrStr)
+//		if ok && value != nil {
+//			service := value.(*MaoIcmpService)
+//			service.Alive = true
+//			service.LastSeen = lastseen
+//			service.RttDuration = service.LastSeen.Sub(service.RttOutboundTimestamp).Nanoseconds()
+//			service.ReportCount++
+//		}
+//	}
+//}

@@ -143,14 +143,18 @@ func startCliOutput(dump_interval uint32) {
 }
 
 
-func startRestful(webAddr string) {
+func startRestful(webAddr string, icmpKaModule *icmpKa.IcmpDetectModule) {
 	util.MaoLog(util.INFO, fmt.Sprintf("Starting web show %s ...", webAddr))
 	gin.SetMode(gin.ReleaseMode)
 	restful := gin.Default()
+
+	restful.LoadHTMLGlob("resource/*")
+	restful.Static("/static/", "resource")
+
 	restful.GET("/json", showServers)
 	restful.GET("/", showServerPlain)
 
-	icmpKa.ConfigRestControlInterface(restful)
+	icmpKaModule.ConfigRestControlInterface(restful)
 
 	err := restful.Run(webAddr)
 	if err != nil {
@@ -181,7 +185,9 @@ func runGrpcServer(server *grpc.Server, listener net.Listener) {
 	util.MaoLog(util.INFO, "Serve over")
 }
 
-func RunServer(report_server_addr *net.IP, report_server_port uint32, web_server_addr *net.IP, web_server_port uint32, dump_interval uint32, refresh_interval uint32, silent bool) {
+func RunServer(
+	report_server_addr *net.IP, report_server_port uint32, web_server_addr *net.IP, web_server_port uint32,
+	dump_interval uint32, refresh_interval uint32, silent bool) {
 
 	log.SetOutput(os.Stdout)
 
@@ -213,7 +219,7 @@ func RunServer(report_server_addr *net.IP, report_server_port uint32, web_server
 	icmpDetectModule.InitIcmpModule()
 	// ============================
 
-	go startRestful(parent.GetAddrPort(web_server_addr, web_server_port))
+	go startRestful(parent.GetAddrPort(web_server_addr, web_server_port), icmpDetectModule)
 
 	if silent == false {
 		go startCliOutput(dump_interval)

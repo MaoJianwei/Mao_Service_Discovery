@@ -15,9 +15,9 @@ import (
 )
 
 var (
-	addServiceChan chan string
-	delServiceChan chan string
-	configService  []*MaoIcmpService
+	//addServiceChan *chan string
+	//delServiceChan *chan string
+	//configService  []*MaoIcmpService
 )
 
 const (
@@ -54,6 +54,10 @@ type IcmpDetectModule struct {
 	//ControlPort uint32 // Todo: can be moved out
 	AddChan *chan string
 	DelChan *chan string
+
+	//addServiceChan *chan string
+	//delServiceChan *chan string
+	configService  []*MaoIcmpService
 }
 
 func (m *IcmpDetectModule) sendIcmpLoop() {
@@ -208,7 +212,7 @@ func (m *IcmpDetectModule) refreshShowingService() {
 			newConfigService = append(newConfigService, value.(*MaoIcmpService))
 			return true
 		})
-		configService = newConfigService
+		m.configService = newConfigService
 	}
 }
 
@@ -228,6 +232,9 @@ func (m *IcmpDetectModule) InitIcmpModule() bool {
 	}
 	util.MaoLog(util.INFO, "Listen ICMPv6 ok")
 
+	//m.addServiceChan = m.AddChan
+	//m.delServiceChan = m.DelChan
+
 	go m.receiveProcessIcmpLoop(PROTO_ICMP, m.connV4)
 	go m.receiveProcessIcmpLoop(PROTO_ICMP_V6, m.connV6)
 	go m.sendIcmpLoop()
@@ -246,15 +253,15 @@ func showConfigPage(c *gin.Context) {
 	c.HTML(200, "index.html", nil)
 }
 
-func showServiceIp(c *gin.Context) {
-	tmp := configService
+func (m *IcmpDetectModule) showServiceIps(c *gin.Context) {
+	tmp := m.configService
 	sort.Slice(tmp, func(i, j int) bool {
 		return tmp[i].Address < tmp[j].Address
 	})
 	c.JSON(200, tmp)
 }
 
-func processServiceIp(c *gin.Context) {
+func (m *IcmpDetectModule) processServiceIp(c *gin.Context) {
 	v4Ip, ok := c.GetPostForm("ipv4v6")
 	if ok {
 		v4IpArr := strings.Fields(v4Ip)
@@ -262,14 +269,15 @@ func processServiceIp(c *gin.Context) {
 			ip := net.ParseIP(s)
 			if ip != nil {
 				if c.FullPath() == URL_CONFIG_ADD_SERVICE_IP {
-					addServiceChan <- s
+					*m.AddChan <- s
 				} else {
-					delServiceChan <- s
+					*m.DelChan <- s
 				}
 			}
 		}
 	}
-	c.HTML(200, "index.html", nil)
+
+	showConfigPage(c)
 }
 
 //func runRestControlInterface(ControlPort uint32) {
@@ -289,14 +297,12 @@ func processServiceIp(c *gin.Context) {
 //	}
 //}
 
-func ConfigRestControlInterface(restful *gin.Engine) {
-	restful.LoadHTMLFiles("resource/index.html")
-	restful.Static("/static/", "resource")
-
+func (m *IcmpDetectModule) ConfigRestControlInterface(restful *gin.Engine) {
 	restful.GET(URL_CONFIG_HOMEPAGE, showConfigPage)
-	restful.GET(URL_CONFIG_SHOW_SERVICE_IP, showServiceIp)
-	restful.POST(URL_CONFIG_ADD_SERVICE_IP, processServiceIp)
-	restful.POST(URL_CONFIG_DEL_SERVICE_IP, processServiceIp)
+
+	restful.GET(URL_CONFIG_SHOW_SERVICE_IP, m.showServiceIps)
+	restful.POST(URL_CONFIG_ADD_SERVICE_IP, m.processServiceIp)
+	restful.POST(URL_CONFIG_DEL_SERVICE_IP, m.processServiceIp)
 }
 
 //func main() {
