@@ -51,12 +51,19 @@ type IcmpDetectModule struct {
 	connV6       *icmp.PacketConn
 	serviceStore sync.Map // address_string -> Service object
 
-	//ControlPort uint32 // Todo: can be moved out
 	AddChan *chan string
 	DelChan *chan string
 
-	//addServiceChan *chan string
-	//delServiceChan *chan string
+	// configurable parameter
+	sendInterval uint32 // milliseconds
+	checkInterval uint32 // milliseconds
+	leaveTimeout uint32 // milliseconds
+	refreshShowingInterval uint32 //
+
+	// tunable configurable parameter
+	receiveFreezePeriod uint32 // milliseconds - mitigate attack with malformed packets.
+
+	// only for web showing
 	configService  []*MaoIcmpService
 }
 
@@ -120,7 +127,7 @@ func (m *IcmpDetectModule) sendIcmpLoop() {
 
 			return true
 		})
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(time.Duration(m.sendInterval) * time.Millisecond)
 		round++
 	}
 }
@@ -130,25 +137,27 @@ func (m *IcmpDetectModule) sendIcmpLoop() {
  * For IPv4: PROTO_ICMP_V6, m.connV6
  */
 func (m *IcmpDetectModule) receiveProcessIcmpLoop(protoNum int, conn *icmp.PacketConn) {
-	freeze_period := 500 // ms
 	recvBuf := make([]byte, 2000)
 	for {
 		count, addr, err := conn.ReadFrom(recvBuf)
 		lastseen := time.Now()
 		if err != nil {
-			util.MaoLog(util.WARN, fmt.Sprintf("Fail to recv ICMP, freeze %d ms, %s", freeze_period, err.Error()))
-			time.Sleep(time.Duration(freeze_period) * time.Millisecond)
+			util.MaoLog(util.WARN, fmt.Sprintf("Fail to recv ICMP, freeze %d ms, %s", m.receiveFreezePeriod, err.Error()))
+			time.Sleep(time.Duration(m.receiveFreezePeriod) * time.Millisecond)
 			continue
 		}
 
 		msg, err := icmp.ParseMessage(protoNum, recvBuf)
 		if err != nil {
-			util.MaoLog(util.WARN, fmt.Sprintf("Fail to parse ICMP, %s", err.Error()))
+			util.MaoLog(util.WARN, fmt.Sprintf("Fail to parse ICMP, freeze %d ms, %s", m.receiveFreezePeriod, err.Error()))
+			time.Sleep(time.Duration(m.receiveFreezePeriod) * time.Millisecond)
 			continue
 		}
 
 		icmpEcho, ok := msg.Body.(*icmp.Echo)
 		if !ok {
+			util.MaoLog(util.WARN, fmt.Sprintf("Fail to convert *icmp.Echo, freeze %d ms, %s", m.receiveFreezePeriod, err.Error()))
+			time.Sleep(time.Duration(m.receiveFreezePeriod) * time.Millisecond)
 			continue
 		}
 		util.MaoLog(util.DEBUG, fmt.Sprintf("%v, %v = %v, %v, %v, %v, %v, %v", count, addr, msg.Type, msg.Code, msg.Checksum, icmpEcho.ID, icmpEcho.Seq, icmpEcho.Data))
@@ -171,8 +180,7 @@ func (m *IcmpDetectModule) receiveProcessIcmpLoop(protoNum int, conn *icmp.Packe
 }
 
 func (m *IcmpDetectModule) controlLoop() {
-	checkPeriod := 1 * time.Second
-	checkTimer := time.NewTimer(checkPeriod)
+	checkTimer := time.NewTimer(time.Duration(m.checkInterval) * time.Millisecond)
 	for {
 		select {
 		case addService := <-*m.AddChan:
@@ -194,19 +202,19 @@ func (m *IcmpDetectModule) controlLoop() {
 		case <-checkTimer.C:
 			m.serviceStore.Range(func(key, value interface{}) bool {
 				service := value.(*MaoIcmpService)
-				if service.Alive && time.Since(service.LastSeen) > 3*time.Second {
+				if service.Alive && time.Since(service.LastSeen) > time.Duration(m.leaveTimeout) * time.Second {
 					service.Alive = false
 				}
 				return true
 			})
-			checkTimer.Reset(checkPeriod)
+			checkTimer.Reset(time.Duration(m.checkInterval) * time.Millisecond)
 		}
 	}
 }
 
 func (m *IcmpDetectModule) refreshShowingService() {
 	for {
-		time.Sleep(1 * time.Second)
+		time.Sleep(time.Duration(m.refreshShowingInterval) * time.Millisecond)
 		newConfigService := []*MaoIcmpService{}
 		m.serviceStore.Range(func(_, value interface{}) bool {
 			newConfigService = append(newConfigService, value.(*MaoIcmpService))
