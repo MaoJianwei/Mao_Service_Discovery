@@ -221,7 +221,7 @@ func RunServer(
 
 	go startRestful(parent.GetAddrPort(web_server_addr, web_server_port), icmpDetectModule)
 
-	if silent == false {
+	if !silent {
 		go startCliOutput(dump_interval)
 	}
 

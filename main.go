@@ -12,18 +12,24 @@ import (
 )
 
 var (
-	silent bool
 	//main_server_addr net.IP
 	report_server_addr net.IP
 	report_server_port uint32
-	report_interval uint32
+	silent bool
+
+
 	web_server_addr net.IP
 	web_server_port uint32
+
 	dump_interval uint32
 	refresh_interval uint32
 
+
+	report_interval uint32
+
 	nat66Gateway bool
 	nat66Persistent bool
+
 	influxdbUrl string
 	influxdbOrgBucket string
 	influxdbToken string
@@ -99,6 +105,31 @@ var serverCmd = &cobra.Command{
 	},
 }
 
+/**
+Common:
+	- report_server_addr : connect to / listen on the addr, for service discovery
+	- report_server_port : connect to / listen on the port, for service discovery
+	- silent : if true, not output logs at DEBUG & INFO level
+Server:
+	- web_server_addr : listen on the addr, for web control
+	- web_server_port : listen on the port, for web control
+
+	- dump_interval : interval for dump all services info. (milliseconds)
+	- refresh_interval : interval for refresh the status of clients. (milliseconds)
+
+Client:
+	- report_interval : interval for report status to server. (milliseconds)
+
+	- influxdb_url ：url to access influxdb database
+	- influxdb_org_bucket : organization and bucket names
+	- influxdb_token : token to access influxdb database
+
+	- enable_aux_nat66_stat : enable to report nat66 statistics
+	- enable_aux_nat66_persistent : enable to persistent nat66 statistics to database
+
+	- enable_aux_env_temp_monitor : enable to monitor environment temperature
+	- enable_aux_env_temp_persistent : enable to upload environment temperature to Influxdb
+ */
 func init() {
 	rootCmd.PersistentFlags().String("report_server_addr","::1","2001:db8::1")
 	rootCmd.PersistentFlags().Uint32("report_server_port",28888,"28888")
@@ -114,12 +145,13 @@ func init() {
 
 
 	generalClientCmd.Flags().Uint32("report_interval", 1000, "1000")
-	generalClientCmd.Flags().Bool("enable_aux_nat66_stat", false, "Usable only in linux with root privilege")
 
-	generalClientCmd.Flags().Bool("enable_aux_nat66_persistent", false, "Enable to upload stat to Influxdb")
 	generalClientCmd.Flags().String("influxdb_url","","https://domain-or-ip:port")
 	generalClientCmd.Flags().String("influxdb_org_bucket","","same name for Org and Bucket")
 	generalClientCmd.Flags().String("influxdb_token","","token string from Influxdb")
+
+	generalClientCmd.Flags().Bool("enable_aux_nat66_stat", false, "Usable only in linux with root privilege")
+	generalClientCmd.Flags().Bool("enable_aux_nat66_persistent", false, "Enable to upload stat to Influxdb")
 
 	generalClientCmd.Flags().Bool("enable_aux_env_temp_monitor", false, "Enable to monitor environment temperature")
 	generalClientCmd.Flags().Bool("enable_aux_env_temp_persistent", false, "Enable to upload environment temperature to Influxdb")
@@ -185,6 +217,7 @@ func readServerArgs(cmd *cobra.Command) error {
 		return errors.New("web_server_port is invalid")
 	}
 
+
 	dump_interval, err = cmd.Flags().GetUint32("dump_interval")
 	if err != nil {
 		return err
@@ -219,16 +252,6 @@ func readGeneralClientArgs(cmd *cobra.Command) error {
 		return errors.New("report_interval is invalid")
 	}
 
-	nat66Gateway, err = cmd.Flags().GetBool("enable_aux_nat66_stat")
-	if err != nil {
-		return err
-	}
-
-
-	nat66Persistent, err = cmd.Flags().GetBool("enable_aux_nat66_persistent")
-	if err != nil {
-		return err
-	}
 
 	influxdbUrl, err = cmd.Flags().GetString("influxdb_url")
 	if err != nil {
@@ -241,6 +264,17 @@ func readGeneralClientArgs(cmd *cobra.Command) error {
 	}
 
 	influxdbToken, err = cmd.Flags().GetString("influxdb_token")
+	if err != nil {
+		return err
+	}
+
+
+	nat66Gateway, err = cmd.Flags().GetBool("enable_aux_nat66_stat")
+	if err != nil {
+		return err
+	}
+
+	nat66Persistent, err = cmd.Flags().GetBool("enable_aux_nat66_persistent")
 	if err != nil {
 		return err
 	}

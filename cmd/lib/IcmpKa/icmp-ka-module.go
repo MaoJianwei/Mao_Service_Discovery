@@ -54,12 +54,14 @@ type IcmpDetectModule struct {
 	AddChan *chan string
 	DelChan *chan string
 
+	// TODO - MAKE IT CONFIGURABLE
 	// configurable parameter
 	sendInterval uint32 // milliseconds
 	checkInterval uint32 // milliseconds
 	leaveTimeout uint32 // milliseconds
 	refreshShowingInterval uint32 //
 
+	// TODO - MAKE IT CONFIGURABLE
 	// tunable configurable parameter
 	receiveFreezePeriod uint32 // milliseconds - mitigate attack with malformed packets.
 
@@ -240,8 +242,19 @@ func (m *IcmpDetectModule) InitIcmpModule() bool {
 	}
 	util.MaoLog(util.INFO, "Listen ICMPv6 ok")
 
-	//m.addServiceChan = m.AddChan
-	//m.delServiceChan = m.DelChan
+	// init it when construction: m.addServiceChan = m.AddChan
+	// init it when construction: m.delServiceChan = m.DelChan
+
+	// configurable parameter
+	m.sendInterval = 200
+	m.checkInterval = 500
+	m.leaveTimeout = 2000
+	m.refreshShowingInterval = 1000
+
+	// tunable configurable parameter
+	m.receiveFreezePeriod = 10
+	m.configService = []*MaoIcmpService{}
+
 
 	go m.receiveProcessIcmpLoop(PROTO_ICMP, m.connV4)
 	go m.receiveProcessIcmpLoop(PROTO_ICMP_V6, m.connV6)
