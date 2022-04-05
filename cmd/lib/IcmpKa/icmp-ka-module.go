@@ -21,7 +21,7 @@ var (
 )
 
 const (
-	URL_CONFIG_HOMEPAGE        string = "/"
+	URL_CONFIG_HOMEPAGE        string = "/configIcmp"
 	URL_CONFIG_ADD_SERVICE_IP  string = "/addServiceIp"
 	URL_CONFIG_DEL_SERVICE_IP  string = "/delServiceIp"
 	URL_CONFIG_SHOW_SERVICE_IP string = "/showServiceIP"
@@ -51,8 +51,8 @@ type IcmpDetectModule struct {
 	connV6       *icmp.PacketConn
 	serviceStore sync.Map // address_string -> Service object
 
-	AddChan *chan string
-	DelChan *chan string
+	AddChan *chan string // need to be initiated when constructing
+	DelChan *chan string // need to be initiated when constructing
 
 	// TODO - MAKE IT CONFIGURABLE
 	// configurable parameter
@@ -202,6 +202,7 @@ func (m *IcmpDetectModule) controlLoop() {
 			m.serviceStore.Delete(delService)
 			util.MaoLog(util.DEBUG, fmt.Sprintf("Del service %s", delService))
 		case <-checkTimer.C:
+			// aliveness checking
 			m.serviceStore.Range(func(key, value interface{}) bool {
 				service := value.(*MaoIcmpService)
 				if service.Alive && time.Since(service.LastSeen) > time.Duration(m.leaveTimeout) * time.Second {
