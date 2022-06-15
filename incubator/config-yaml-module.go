@@ -212,8 +212,7 @@ func (C *ConfigYamlModule) eventLoop(config map[string]interface{}) {
 				//}
 
 			case EVENT_PUT:
-				util.MaoLog(util.INFO, MODULE_NAME, fmt.Sprintf("EVENT_PUT, %s, %v, %v",
-					event.path, event.data, event.result))
+				util.MaoLogM(util.INFO, MODULE_NAME, "EVENT_PUT, %s, %v, %v", event.path, event.data, event.result)
 
 				if !ok {
 					// Create transit path, and move transitConfig forward.
