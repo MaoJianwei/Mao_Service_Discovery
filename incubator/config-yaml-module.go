@@ -82,7 +82,7 @@ func (C *ConfigYamlModule) GetConfig(path string) (interface{}, int) {
 	// TODO: timeout mechanism
 	ret := <-result
 
-	log.Printf("GetConfig result: %v", ret)
+	util.MaoLogM(util.WARN, MODULE_NAME, "GetConfig result: %v", ret)
 	return ret.result, ret.errCode
 }
 
@@ -107,7 +107,7 @@ func (C *ConfigYamlModule) PutConfig(path string, data interface{}) (bool, int) 
 		retBool = ret.result.(bool)
 	}
 
-	log.Printf("PutConfig result: %v, %v", ret, retBool)
+	util.MaoLogM(util.WARN, MODULE_NAME, "PutConfig result: %v, %v", ret, retBool)
 	return retBool, ret.errCode
 }
 
@@ -255,13 +255,12 @@ func (C *ConfigYamlModule) eventLoop(config map[string]interface{}) {
 		case <-checkShutdownTimer.C:
 			util.MaoLog(util.INFO, fmt.Sprintf("CheckShutdown, event queue len %d", len(C.eventChannel)))
 			if C.needShutdown && len(C.eventChannel) == 0 {
-				util.MaoLog(util.INFO, "Config-YAML-module exit.")
+				util.MaoLogM(util.INFO, MODULE_NAME, "Exit.")
 				return
 			}
 			checkShutdownTimer.Reset(checkInterval)
 		}
 	}
-	util.MaoLogM(util.INFO, MODULE_NAME, "Exit.")
 }
 
 func (C *ConfigYamlModule) RequireShutdown() {
@@ -324,6 +323,26 @@ func main() {
 	vvv[6666] = "radar"
 	vvv[8888] = 5511
 	vvv[7181] = 2.525
+
+
+	value, errCode := configModule.GetConfig("/qingdao/radar/freq") // ok
+	log.Printf("Put 1 %v, %v\n", value, errCode)
+
+	value, errCode = configModule.GetConfig("/qingdao/radar/name") // ok
+	log.Printf("Put 2 %v, %v\n", value, errCode)
+
+	value, errCode = configModule.GetConfig("/qingdao/name") // ok
+	log.Printf("Put 3 %v, %v\n", value, errCode)
+
+	value, errCode = configModule.GetConfig("/config/module/instance/object") // bad
+	log.Printf("Put 4 %v, %v\n", value, errCode)
+
+	value, errCode = configModule.GetConfig("/config/module/instance/mmm") // ok
+	log.Printf("Put 5 %v, %v\n", value, errCode)
+
+	value, errCode = configModule.GetConfig("/config/module/instance/vvv") // ok
+	log.Printf("Put 6 %v, %v\n", value, errCode)
+
 
 	b, v := configModule.PutConfig("/qingdao/radar/freq", 118.5) // ok
 	log.Printf("Put 1 %v, %v\n", b, v)
