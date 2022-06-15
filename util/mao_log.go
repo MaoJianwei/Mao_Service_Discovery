@@ -1,6 +1,9 @@
 package util
 
-import "log"
+import (
+	"fmt"
+	"log"
+)
 
 type MaoLogLevel uint8
 
@@ -15,7 +18,7 @@ var (
 	MaoLogLevelString = [4]string{"DEBUG", "INFO ", "WARN ", "ERROR"}
 )
 
-func MaoLog(level MaoLogLevel, logStr string) {
+func MaoLog(level MaoLogLevel, format string, a ...interface{}) {
 	switch level {
 	case DEBUG:
 		fallthrough
@@ -24,6 +27,19 @@ func MaoLog(level MaoLogLevel, logStr string) {
 	case WARN:
 		fallthrough
 	case ERROR:
-		log.Printf("%s: %s", MaoLogLevelString[level], logStr)
+		log.Printf("%s: %s", MaoLogLevelString[level], fmt.Sprintf(format, a...))
+	}
+}
+
+func MaoLogM(level MaoLogLevel, moduleName string, format string, a ...interface{}) {
+	switch level {
+	case DEBUG:
+		fallthrough
+	case INFO:
+		fallthrough
+	case WARN:
+		fallthrough
+	case ERROR:
+		log.Printf("%s: %s: %s", MaoLogLevelString[level], moduleName, fmt.Sprintf(format, a ...))
 	}
 }
