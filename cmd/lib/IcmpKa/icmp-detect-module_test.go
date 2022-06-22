@@ -6,8 +6,8 @@ import (
 
 func TestIcmpDetectModule_InitIcmpModule(t *testing.T) {
 	icmpDetectModule := &IcmpDetectModule{
-		AddChan:     nil,
-		DelChan:     nil,
+		//AddChan:     nil,
+		//DelChan:     nil,
 	}
 	//icmpDetectModule.InitIcmpModule()
 
