@@ -1,6 +1,8 @@
 package IcmpKa
 
 import (
+	"MaoServerDiscovery/cmd/lib/Config"
+	"MaoServerDiscovery/cmd/lib/MaoCommon"
 	"MaoServerDiscovery/util"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -21,16 +23,18 @@ var (
 )
 
 const (
-	URL_CONFIG_HOMEPAGE        string = "/configIcmp"
-	URL_CONFIG_ADD_SERVICE_IP  string = "/addServiceIp"
-	URL_CONFIG_DEL_SERVICE_IP  string = "/delServiceIp"
-	URL_CONFIG_SHOW_SERVICE_IP string = "/showServiceIP"
+	URL_CONFIG_HOMEPAGE        = "/configIcmp"
+	URL_CONFIG_ADD_SERVICE_IP  = "/addServiceIp"
+	URL_CONFIG_DEL_SERVICE_IP  = "/delServiceIp"
+	URL_CONFIG_SHOW_SERVICE_IP = "/showServiceIP"
 
 	PROTO_ICMP    = 1
 	PROTO_ICMP_V6 = 58
 
 	ICMP_DETECT_ID    = 0x1994
 	ICMP_V6_DETECT_ID = 0x1996
+
+	SERVICE_LIST_CONFIG_PATH = "/icmp-ka/services"
 )
 
 type MaoIcmpService struct {
@@ -51,8 +55,8 @@ type IcmpDetectModule struct {
 	connV6       *icmp.PacketConn
 	serviceStore sync.Map // address_string -> Service object
 
-	AddChan *chan string // need to be initiated when constructing
-	DelChan *chan string // need to be initiated when constructing
+	AddChan chan string // need to be initiated when constructing
+	DelChan chan string // need to be initiated when constructing
 
 	// TODO - MAKE IT CONFIGURABLE
 	// configurable parameter
@@ -185,7 +189,7 @@ func (m *IcmpDetectModule) controlLoop() {
 	checkTimer := time.NewTimer(time.Duration(m.checkInterval) * time.Millisecond)
 	for {
 		select {
-		case addService := <-*m.AddChan:
+		case addService := <-m.AddChan:
 			if _, ok := m.serviceStore.Load(addService); !ok {
 				m.serviceStore.Store(addService, &MaoIcmpService{
 					Address:              addService,
@@ -197,10 +201,12 @@ func (m *IcmpDetectModule) controlLoop() {
 					RttOutboundTimestamp: time.Time{},
 				})
 				util.MaoLog(util.DEBUG, fmt.Sprintf("Get new service %s", addService))
+				m.addNewServiceToConfig(addService)
 			}
-		case delService := <-*m.DelChan:
+		case delService := <-m.DelChan:
 			m.serviceStore.Delete(delService)
 			util.MaoLog(util.DEBUG, fmt.Sprintf("Del service %s", delService))
+			m.removeOldServiceFromConfig(delService)
 		case <-checkTimer.C:
 			// aliveness checking
 			m.serviceStore.Range(func(key, value interface{}) bool {
@@ -227,6 +233,89 @@ func (m *IcmpDetectModule) refreshShowingService() {
 	}
 }
 
+func (m *IcmpDetectModule) getServiceConfig() (serviceList []string){
+	configModule := MaoCommon.ServiceRegistryGetConfigModule()
+	if configModule == nil {
+		util.MaoLog(util.WARN, "Fail to get config module instance")
+		return nil
+	}
+
+	serviceObj, errCode := configModule.GetConfig(SERVICE_LIST_CONFIG_PATH)
+	if errCode != Config.ERR_CODE_SUCCESS {
+		util.MaoLog(util.WARN, "Fail to get current services from config, errCode: %d", errCode)
+		return nil
+	}
+
+	services := serviceObj.([]string)
+	return services
+}
+
+func (m *IcmpDetectModule) saveServiceConfig(serviceList []string) (success bool){
+	configModule := MaoCommon.ServiceRegistryGetConfigModule()
+	if configModule == nil {
+		util.MaoLog(util.WARN, "Fail to get config module instance")
+		return false
+	}
+
+	_, errCode := configModule.PutConfig(SERVICE_LIST_CONFIG_PATH, serviceList)
+	if errCode != Config.ERR_CODE_SUCCESS {
+		util.MaoLog(util.WARN, "Fail to put current services to config, errCode: %d", errCode)
+		return false
+	}
+
+	return true
+}
+
+func (m *IcmpDetectModule) addNewServiceToConfig(serviceAddr string) (success bool) {
+	currentServices := m.getServiceConfig()
+	if currentServices == nil {
+		util.MaoLog(util.WARN, "Fail to get current services from config")
+		return false
+	}
+
+	currentServices = append(currentServices, serviceAddr)
+
+	return m.saveServiceConfig(currentServices)
+}
+
+func (m *IcmpDetectModule) removeOldServiceFromConfig(serviceAddr string) (success bool) {
+	currentServices := m.getServiceConfig()
+	if currentServices == nil {
+		util.MaoLog(util.WARN, "Fail to get current services from config")
+		return false
+	}
+
+	// assume that: the service address appears only once in the config
+	for index, s := range currentServices {
+		if s == serviceAddr {
+			currentServices = append(currentServices[:index], currentServices[index+1:]...)
+			m.saveServiceConfig(currentServices)
+			return true
+		}
+	}
+
+	util.MaoLog(util.WARN, "Can't find the service in the config, can't remove it, service: %s", serviceAddr)
+	return false
+}
+
+
+
+
+
+
+func (m *IcmpDetectModule) AddService(serviceIPv4v6 string) {
+	if net.ParseIP(serviceIPv4v6) != nil {
+		m.AddChan <- serviceIPv4v6
+	}
+}
+
+func (m *IcmpDetectModule) DelService(serviceIPv4v6 string) {
+	if net.ParseIP(serviceIPv4v6) != nil {
+		m.DelChan <- serviceIPv4v6
+	}
+}
+
+
 func (m *IcmpDetectModule) InitIcmpModule() bool {
 	var err error
 	m.connV4, err = icmp.ListenPacket("ip4:icmp", "0.0.0.0")
@@ -243,8 +332,9 @@ func (m *IcmpDetectModule) InitIcmpModule() bool {
 	}
 	util.MaoLog(util.INFO, "Listen ICMPv6 ok")
 
-	// init it when construction: m.addServiceChan = m.AddChan
-	// init it when construction: m.delServiceChan = m.DelChan
+	m.AddChan = make(chan string, 50)
+	m.DelChan = make(chan string, 50)
+
 
 	// configurable parameter
 	m.sendInterval = 200
@@ -263,6 +353,8 @@ func (m *IcmpDetectModule) InitIcmpModule() bool {
 	go m.controlLoop()
 
 	go m.refreshShowingService()
+
+	m.configRestControlInterface()
 
 	return true
 }
@@ -288,13 +380,10 @@ func (m *IcmpDetectModule) processServiceIp(c *gin.Context) {
 	if ok {
 		v4IpArr := strings.Fields(v4Ip)
 		for _, s := range v4IpArr {
-			ip := net.ParseIP(s)
-			if ip != nil {
-				if c.FullPath() == URL_CONFIG_ADD_SERVICE_IP {
-					*m.AddChan <- s
-				} else {
-					*m.DelChan <- s
-				}
+			if c.FullPath() == URL_CONFIG_ADD_SERVICE_IP {
+				m.AddService(s)
+			} else {
+				m.DelService(s)
 			}
 		}
 	}
@@ -319,12 +408,18 @@ func (m *IcmpDetectModule) processServiceIp(c *gin.Context) {
 //	}
 //}
 
-func (m *IcmpDetectModule) ConfigRestControlInterface(restful *gin.Engine) {
-	restful.GET(URL_CONFIG_HOMEPAGE, showConfigPage)
+func (m *IcmpDetectModule) configRestControlInterface() {
+	restfulServer := MaoCommon.ServiceRegistryGetRestfulServerModule()
+	if restfulServer == nil {
+		util.MaoLog(util.WARN, "Fail to get RestfulServerModule, unable to register restful apis.")
+		return
+	}
 
-	restful.GET(URL_CONFIG_SHOW_SERVICE_IP, m.showServiceIps)
-	restful.POST(URL_CONFIG_ADD_SERVICE_IP, m.processServiceIp)
-	restful.POST(URL_CONFIG_DEL_SERVICE_IP, m.processServiceIp)
+	restfulServer.RegisterGetApi(URL_CONFIG_HOMEPAGE, showConfigPage)
+	restfulServer.RegisterGetApi(URL_CONFIG_SHOW_SERVICE_IP, m.showServiceIps)
+
+	restfulServer.RegisterPostApi(URL_CONFIG_ADD_SERVICE_IP, m.processServiceIp)
+	restfulServer.RegisterPostApi(URL_CONFIG_DEL_SERVICE_IP, m.processServiceIp)
 }
 
 //func main() {
