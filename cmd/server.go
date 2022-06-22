@@ -207,7 +207,7 @@ func RunServer(
 
 	// ====== Config(YAML) module ======
 	configModule := &config.ConfigYamlModule{}
-	if !configModule.InitConfigModule("beijing.yaml") {
+	if !configModule.InitConfigModule(config.DEFAULT_CONFIG_FILE) {
 		return
 	}
 

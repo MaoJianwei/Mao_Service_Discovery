@@ -12,6 +12,8 @@ import (
 )
 
 const (
+	DEFAULT_CONFIG_FILE = "mao-config.yaml"
+
 	EVENT_GET = iota
 	EVENT_PUT
 
@@ -307,7 +309,7 @@ func main() {
 	configModule := &ConfigYamlModule{
 	}
 
-	if !configModule.InitConfigModule("beijing.yaml") {
+	if !configModule.InitConfigModule(DEFAULT_CONFIG_FILE) {
 		return
 	}
 
@@ -575,7 +577,7 @@ func main() {
 }
 
 /**
-content, _ := ioutil.ReadFile("beijing.yaml")
+content, _ := ioutil.ReadFile(DEFAULT_CONFIG_FILE)
 
 var c map[string]interface{}
 yaml.Unmarshal(content, &c)
