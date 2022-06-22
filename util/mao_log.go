@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"log"
+	"os"
 )
 
 type MaoLogLevel uint8
@@ -17,6 +18,10 @@ const (
 var (
 	MaoLogLevelString = [4]string{"DEBUG", "INFO ", "WARN ", "ERROR"}
 )
+
+func InitMaoLog() {
+	log.SetOutput(os.Stdout)
+}
 
 func MaoLog(level MaoLogLevel, format string, a ...interface{}) {
 	switch level {
