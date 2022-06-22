@@ -1,4 +1,4 @@
-package main
+package Config
 
 import (
 	"MaoServerDiscovery/util"
@@ -69,7 +69,7 @@ func (C *ConfigYamlModule) loadConfig() (map[string]interface{}, error) {
 	return config, nil
 }
 
-func (C *ConfigYamlModule) GetConfig(path string) (interface{}, int) {
+func (C *ConfigYamlModule) GetConfig(path string) (object interface{}, errCode int) {
 	result := make(chan eventResult, 1)
 	event := &configEvent{
 		eventType: EVENT_GET,
@@ -89,7 +89,7 @@ func (C *ConfigYamlModule) GetConfig(path string) (interface{}, int) {
 // PutConfig
 // path: e.g. /version, /icmp-detect/services
 // result: bool, true or false
-func (C *ConfigYamlModule) PutConfig(path string, data interface{}) (bool, int) {
+func (C *ConfigYamlModule) PutConfig(path string, data interface{}) (success bool, errCode int) {
 
 	result := make(chan eventResult, 1)
 	event := &configEvent{
@@ -305,8 +305,6 @@ func main() {
 	log.Println(os.Args)
 
 	configModule := &ConfigYamlModule{
-		needShutdown: false,
-		eventChannel: nil,
 	}
 
 	if !configModule.InitConfigModule("beijing.yaml") {
