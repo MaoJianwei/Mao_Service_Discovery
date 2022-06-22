@@ -1,7 +1,11 @@
 package branch
 
 import (
+	"MaoServerDiscovery/cmd/api"
+	config "MaoServerDiscovery/cmd/lib/Config"
 	icmpKa "MaoServerDiscovery/cmd/lib/IcmpKa"
+	"MaoServerDiscovery/cmd/lib/MaoCommon"
+	"MaoServerDiscovery/cmd/lib/Restful"
 	pb "MaoServerDiscovery/grpc.maojianwei.com/server/discovery/api"
 	"MaoServerDiscovery/util"
 	parent "MaoServerDiscovery/util"
@@ -12,7 +16,6 @@ import (
 	"google.golang.org/grpc/peer"
 	"log"
 	"net"
-	"os"
 	"sort"
 	"sync"
 	"time"
@@ -142,25 +145,6 @@ func startCliOutput(dump_interval uint32) {
 	}
 }
 
-
-func startRestful(webAddr string, icmpKaModule *icmpKa.IcmpDetectModule) {
-	util.MaoLog(util.INFO, fmt.Sprintf("Starting web show %s ...", webAddr))
-	gin.SetMode(gin.ReleaseMode)
-	restful := gin.Default()
-
-	restful.LoadHTMLGlob("resource/*")
-	restful.Static("/static/", "resource")
-
-	restful.GET("/json", showServers)
-	restful.GET("/", showServerPlain)
-
-	icmpKaModule.ConfigRestControlInterface(restful)
-
-	err := restful.Run(webAddr)
-	if err != nil {
-		util.MaoLog(util.ERROR, fmt.Sprintf("Fail to run rest server, %s", err))
-	}
-}
 func showServers(c *gin.Context) {
 	serverTmp := serverAlive
 	c.IndentedJSON(200, serverTmp)
@@ -189,7 +173,7 @@ func RunServer(
 	report_server_addr *net.IP, report_server_port uint32, web_server_addr *net.IP, web_server_port uint32,
 	dump_interval uint32, refresh_interval uint32, silent bool) {
 
-	log.SetOutput(os.Stdout)
+	util.InitMaoLog()
 
 	//
 	mergeChannel := make(chan *ServerNode, 1024)
@@ -209,17 +193,42 @@ func RunServer(
 
 	go mergeAliveServer(mergeChannel, &serverInfo)
 
-	// ====== ICMP KA module ======
-	addServiceChan := make(chan string, 50)
-	delServiceChan := make(chan string, 50)
-	icmpDetectModule := &icmpKa.IcmpDetectModule{
-		AddChan:     &addServiceChan,
-		DelChan:     &delServiceChan,
+
+
+	// ====== Restful Server module - part 1/2 ======
+	restfulServer := &Restful.RestfulServerImpl{}
+	restfulServer.InitRestfulServer()
+
+	// register serger.go's api
+	restfulServer.RegisterGetApi("/json", showServers)
+	restfulServer.RegisterGetApi("/", showServerPlain)
+	// ==============================================
+
+
+	// ====== Config(YAML) module ======
+	configModule := &config.ConfigYamlModule{}
+	if !configModule.InitConfigModule("beijing.yaml") {
+		return
 	}
-	icmpDetectModule.InitIcmpModule()
+
+	MaoCommon.RegisterService(MaoApi.ConfigModuleRegisterName, configModule)
+	// =================================
+
+
+	// ====== ICMP KA module ======
+	icmpDetectModule := &icmpKa.IcmpDetectModule{}
+	if !icmpDetectModule.InitIcmpModule() {
+		return
+	}
+
+	MaoCommon.RegisterService(MaoApi.IcmpKaModuleRegisterName, icmpDetectModule)
 	// ============================
 
-	go startRestful(parent.GetAddrPort(web_server_addr, web_server_port), icmpDetectModule)
+	// ====== Restful Server module - part 2/2 ======
+	restfulServer.StartRestfulServerDaemon(parent.GetAddrPort(web_server_addr, web_server_port))
+	// ==============================================
+
+
 
 	if !silent {
 		go startCliOutput(dump_interval)
