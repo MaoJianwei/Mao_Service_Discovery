@@ -131,14 +131,14 @@ Client:
 	- enable_aux_env_temp_persistent : enable to upload environment temperature to Influxdb
  */
 func init() {
-	rootCmd.PersistentFlags().String("report_server_addr","::1","2001:db8::1")
-	rootCmd.PersistentFlags().Uint32("report_server_port",28888,"28888")
-	rootCmd.PersistentFlags().Bool("silent", false,"false")
+	rootCmd.PersistentFlags().String("report_server_addr","::1","IP address for gRPC KA module. (e.g. 2001:db8::1)")
+	rootCmd.PersistentFlags().Uint32("report_server_port",28888,"Port for gRPC KA module.")
+	rootCmd.PersistentFlags().Bool("silent", false,"Don't output the server list periodically.")
 
 
 	//serverCmd.Flags().String("main_server_addr","::","::")
-	serverCmd.Flags().String("web_server_addr","::","::")
-	serverCmd.Flags().Uint32("web_server_port",29999,"29999")
+	serverCmd.Flags().String("web_server_addr","::","IP address for Restful server.")
+	serverCmd.Flags().Uint32("web_server_port",29999,"Port for Restful server.")
 
 	serverCmd.Flags().Uint32("dump_interval", 1000, "1000")
 	serverCmd.Flags().Uint32("refresh_interval", 1000, "1000")
