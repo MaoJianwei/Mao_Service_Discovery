@@ -11,6 +11,12 @@ func ServiceRegistryGetConfigModule() (serviceInstance MaoApi.ConfigModule) {
 }
 
 // if fail, return nil
+func ServiceRegistryGetGrpcKaModule() (serviceInstance MaoApi.GrpcKaModule) {
+	grpcKaModule, _ := GetService(MaoApi.GrpcKaModuleRegisterName).(MaoApi.GrpcKaModule)
+	return grpcKaModule
+}
+
+// if fail, return nil
 func ServiceRegistryGetIcmpKaModule() (serviceInstance MaoApi.IcmpKaModule) {
 	icmpKaModule, _ := GetService(MaoApi.IcmpKaModuleRegisterName).(MaoApi.IcmpKaModule)
 	return icmpKaModule
