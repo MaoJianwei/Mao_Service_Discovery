@@ -85,7 +85,7 @@ func (g *GrpcDetectModule) mergeAliveServer() {
 }
 
 
-func (g *GrpcDetectModule) GetServerInfo() []*MaoApi.GrpcServiceNode {
+func (g *GrpcDetectModule) GetServiceInfo() []*MaoApi.GrpcServiceNode {
 	servers := make([]*MaoApi.GrpcServiceNode, 0)
 	g.serverInfo.Range(func(key, value interface{}) bool {
 		servers = append(servers, value.(*MaoApi.GrpcServiceNode))

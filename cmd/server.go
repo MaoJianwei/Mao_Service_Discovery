@@ -22,7 +22,13 @@ var (
 
 func updateServerAlive(refresh_interval uint32) {
 	for {
+		time.Sleep(time.Duration(refresh_interval) * time.Millisecond)
+
 		grpcModule := MaoCommon.ServiceRegistryGetGrpcKaModule()
+		if grpcModule == nil {
+			util.MaoLog(util.WARN, "Fail to get GrpcKaModule")
+			continue
+		}
 		serviceInfo := grpcModule.GetServiceInfo()
 
 		serviceAliveTmp := make([]*MaoApi.GrpcServiceNode, 0)
@@ -37,8 +43,6 @@ func updateServerAlive(refresh_interval uint32) {
 		})
 
 		serviceAlive = serviceAliveTmp
-
-		time.Sleep(time.Duration(refresh_interval) * time.Millisecond)
 	}
 }
 
