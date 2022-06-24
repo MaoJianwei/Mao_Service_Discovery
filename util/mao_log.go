@@ -26,7 +26,7 @@ func InitMaoLog() {
 func MaoLog(level MaoLogLevel, format string, a ...interface{}) {
 	switch level {
 	case DEBUG:
-		fallthrough
+		//fallthrough
 	case INFO:
 		fallthrough
 	case WARN:
