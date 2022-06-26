@@ -23,6 +23,8 @@ var (
 )
 
 const (
+	MODULE_NAME = "ICMP-Detect-module"
+
 	URL_CONFIG_HOMEPAGE        = "/configIcmp"
 	URL_CONFIG_ADD_SERVICE_IP  = "/addServiceIp"
 	URL_CONFIG_DEL_SERVICE_IP  = "/delServiceIp"
@@ -76,13 +78,13 @@ type IcmpDetectModule struct {
 func (m *IcmpDetectModule) sendIcmpLoop() {
 	round := 1
 	for {
-		util.MaoLog(util.DEBUG, fmt.Sprintf("Detect Round %d", round))
+		util.MaoLogM(util.DEBUG, MODULE_NAME, fmt.Sprintf("Detect Round %d", round))
 		m.serviceStore.Range(func(_, value interface{}) bool {
 			service := value.(*MaoIcmpService)
 
 			addr, err := net.ResolveIPAddr("ip", service.Address)
 			if err != nil {
-				util.MaoLog(util.WARN, fmt.Sprintf("Fail to ResolveIPAddr v4v6Addr: %s", err.Error()))
+				util.MaoLogM(util.WARN, MODULE_NAME, fmt.Sprintf("Fail to ResolveIPAddr v4v6Addr: %s", err.Error()))
 				return true // for continuous iteration
 			}
 
@@ -120,14 +122,14 @@ func (m *IcmpDetectModule) sendIcmpLoop() {
 			// do le->be in the Marshal
 			icmpMsgByte, err := icmpMsg.Marshal(nil)
 			if err != nil {
-				util.MaoLog(util.WARN, fmt.Sprintf("Fail to marshal icmpMsg: %s", err.Error()))
+				util.MaoLogM(util.WARN, MODULE_NAME, fmt.Sprintf("Fail to marshal icmpMsg: %s", err.Error()))
 				return true
 			}
 
 			service.RttOutboundTimestamp = time.Now()
 			_, err = conn.WriteTo(icmpMsgByte, addr)
 			if err != nil {
-				util.MaoLog(util.WARN, fmt.Sprintf("Fail to WriteTo connV6: %s", err.Error()))
+				util.MaoLogM(util.WARN, MODULE_NAME, fmt.Sprintf("Fail to WriteTo connV6: %s", err.Error()))
 				return true
 			}
 
@@ -148,25 +150,25 @@ func (m *IcmpDetectModule) receiveProcessIcmpLoop(protoNum int, conn *icmp.Packe
 		count, addr, err := conn.ReadFrom(recvBuf)
 		lastseen := time.Now()
 		if err != nil {
-			util.MaoLog(util.WARN, fmt.Sprintf("Fail to recv ICMP, freeze %d ms, %s", m.receiveFreezePeriod, err.Error()))
+			util.MaoLogM(util.WARN, MODULE_NAME, fmt.Sprintf("Fail to recv ICMP, freeze %d ms, %s", m.receiveFreezePeriod, err.Error()))
 			time.Sleep(time.Duration(m.receiveFreezePeriod) * time.Millisecond)
 			continue
 		}
 
 		msg, err := icmp.ParseMessage(protoNum, recvBuf)
 		if err != nil {
-			util.MaoLog(util.WARN, fmt.Sprintf("Fail to parse ICMP, freeze %d ms, %s", m.receiveFreezePeriod, err.Error()))
+			util.MaoLogM(util.WARN, MODULE_NAME, fmt.Sprintf("Fail to parse ICMP, freeze %d ms, %s", m.receiveFreezePeriod, err.Error()))
 			time.Sleep(time.Duration(m.receiveFreezePeriod) * time.Millisecond)
 			continue
 		}
 
 		icmpEcho, ok := msg.Body.(*icmp.Echo)
 		if !ok {
-			util.MaoLog(util.WARN, fmt.Sprintf("Fail to convert *icmp.Echo, freeze %d ms, %s", m.receiveFreezePeriod, err.Error()))
+			util.MaoLogM(util.WARN, MODULE_NAME, fmt.Sprintf("Fail to convert *icmp.Echo, freeze %d ms, %s", m.receiveFreezePeriod, err.Error()))
 			time.Sleep(time.Duration(m.receiveFreezePeriod) * time.Millisecond)
 			continue
 		}
-		util.MaoLog(util.DEBUG, fmt.Sprintf("%v, %v = %v, %v, %v, %v, %v, %v", count, addr, msg.Type, msg.Code, msg.Checksum, icmpEcho.ID, icmpEcho.Seq, icmpEcho.Data))
+		util.MaoLogM(util.DEBUG, MODULE_NAME, fmt.Sprintf("%v, %v = %v, %v, %v, %v, %v, %v", count, addr, msg.Type, msg.Code, msg.Checksum, icmpEcho.ID, icmpEcho.Seq, icmpEcho.Data))
 
 		var addrStr string
 		if protoNum == PROTO_ICMP_V6 {
@@ -200,12 +202,12 @@ func (m *IcmpDetectModule) controlLoop() {
 					RttDuration:          0,
 					RttOutboundTimestamp: time.Time{},
 				})
-				util.MaoLog(util.DEBUG, fmt.Sprintf("Get new service %s", addService))
+				util.MaoLogM(util.DEBUG, MODULE_NAME, fmt.Sprintf("Get new service %s", addService))
 				m.addNewServiceToConfig(addService)
 			}
 		case delService := <-m.DelChan:
 			m.serviceStore.Delete(delService)
-			util.MaoLog(util.DEBUG, fmt.Sprintf("Del service %s", delService))
+			util.MaoLogM(util.DEBUG, MODULE_NAME, fmt.Sprintf("Del service %s", delService))
 			m.removeOldServiceFromConfig(delService)
 		case <-checkTimer.C:
 			// aliveness checking
@@ -234,32 +236,47 @@ func (m *IcmpDetectModule) refreshShowingService() {
 }
 
 func (m *IcmpDetectModule) getServiceConfig() (serviceList []string){
+	serviceList = make([]string, 0)
+
 	configModule := MaoCommon.ServiceRegistryGetConfigModule()
 	if configModule == nil {
-		util.MaoLog(util.WARN, "Fail to get config module instance")
+		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to get config module instance")
 		return nil
 	}
 
 	serviceObj, errCode := configModule.GetConfig(SERVICE_LIST_CONFIG_PATH)
 	if errCode != Config.ERR_CODE_SUCCESS {
-		util.MaoLog(util.WARN, "Fail to get current services from config, errCode: %d", errCode)
+		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to get current services from config, errCode: %d", errCode)
 		return nil
 	}
 
-	services := serviceObj.([]string)
-	return services
+	serviceList, ok := serviceObj.([]string)
+	if !ok {
+		// the list is read from config file
+		serviceIntfList, ok := serviceObj.([]interface{})
+		if !ok {
+			util.MaoLogM(util.WARN, MODULE_NAME, "Fail to parse serviceList config, []string and []interface{}")
+			return nil
+		}
+		serviceList = make([]string, 0)
+		for _, s := range serviceIntfList {
+			serviceList = append(serviceList, s.(string))
+		}
+	}
+
+	return serviceList
 }
 
 func (m *IcmpDetectModule) saveServiceConfig(serviceList []string) (success bool){
 	configModule := MaoCommon.ServiceRegistryGetConfigModule()
 	if configModule == nil {
-		util.MaoLog(util.WARN, "Fail to get config module instance")
+		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to get config module instance")
 		return false
 	}
 
 	_, errCode := configModule.PutConfig(SERVICE_LIST_CONFIG_PATH, serviceList)
 	if errCode != Config.ERR_CODE_SUCCESS {
-		util.MaoLog(util.WARN, "Fail to put current services to config, errCode: %d", errCode)
+		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to put current services to config, errCode: %d", errCode)
 		return false
 	}
 
@@ -269,10 +286,16 @@ func (m *IcmpDetectModule) saveServiceConfig(serviceList []string) (success bool
 func (m *IcmpDetectModule) addNewServiceToConfig(serviceAddr string) (success bool) {
 	currentServices := m.getServiceConfig()
 	if currentServices == nil {
-		util.MaoLog(util.WARN, "Fail to get current services from config")
+		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to get current services from config")
 		return false
 	}
 
+	for _, serviceExist := range currentServices {
+		if serviceExist == serviceAddr {
+			// Mainly for reading config during initialization phase.
+			return true
+		}
+	}
 	currentServices = append(currentServices, serviceAddr)
 
 	return m.saveServiceConfig(currentServices)
@@ -281,7 +304,7 @@ func (m *IcmpDetectModule) addNewServiceToConfig(serviceAddr string) (success bo
 func (m *IcmpDetectModule) removeOldServiceFromConfig(serviceAddr string) (success bool) {
 	currentServices := m.getServiceConfig()
 	if currentServices == nil {
-		util.MaoLog(util.WARN, "Fail to get current services from config")
+		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to get current services from config")
 		return false
 	}
 
@@ -294,7 +317,7 @@ func (m *IcmpDetectModule) removeOldServiceFromConfig(serviceAddr string) (succe
 		}
 	}
 
-	util.MaoLog(util.WARN, "Can't find the service in the config, can't remove it, service: %s", serviceAddr)
+	util.MaoLogM(util.WARN, MODULE_NAME, "Can't find the service in the config, can't remove it, service: %s", serviceAddr)
 	return false
 }
 
@@ -316,25 +339,58 @@ func (m *IcmpDetectModule) DelService(serviceIPv4v6 string) {
 }
 
 
+func (m *IcmpDetectModule) initConfigPath() (success bool, serviceConfig []string) {
+	services := m.getServiceConfig()
+	if services != nil {
+		return true, services
+	}
+
+	// the config doesn't exist, init it.
+
+	configModule := MaoCommon.ServiceRegistryGetConfigModule()
+	if configModule == nil {
+		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to get config module instance")
+		return false, nil
+	}
+
+	_, errCode := configModule.PutConfig(SERVICE_LIST_CONFIG_PATH, make([]string, 0))
+	if errCode != Config.ERR_CODE_SUCCESS {
+		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to put empty string array to config, errCode: %d", errCode)
+		return false, nil
+	}
+
+	return true, services
+}
+
 func (m *IcmpDetectModule) InitIcmpModule() bool {
 	var err error
 	m.connV4, err = icmp.ListenPacket("ip4:icmp", "0.0.0.0")
 	if err != nil {
-		util.MaoLog(util.ERROR, fmt.Sprintf("Fail to listen ICMP, %s", err.Error()))
+		util.MaoLogM(util.ERROR, MODULE_NAME, fmt.Sprintf("Fail to listen ICMP, %s", err.Error()))
 		return false
 	}
-	util.MaoLog(util.INFO, "Listen ICMP ok")
+	util.MaoLogM(util.INFO, MODULE_NAME, "Listen ICMP ok")
 
 	m.connV6, err = icmp.ListenPacket("ip6:ipv6-icmp", "::")
 	if err != nil {
-		util.MaoLog(util.ERROR, fmt.Sprintf("Fail to listen ICMPv6, %s", err.Error()))
+		util.MaoLogM(util.ERROR, MODULE_NAME, fmt.Sprintf("Fail to listen ICMPv6, %s", err.Error()))
 		return false
 	}
-	util.MaoLog(util.INFO, "Listen ICMPv6 ok")
+	util.MaoLogM(util.INFO, MODULE_NAME, "Listen ICMPv6 ok")
+
+
 
 	m.AddChan = make(chan string, 50)
 	m.DelChan = make(chan string, 50)
 
+	if success, services := m.initConfigPath(); !success {
+		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to init config.")
+	} else {
+		for _, s := range services {
+			m.AddService(s)
+		}
+		util.MaoLogM(util.INFO, MODULE_NAME, "Services loaded from config: %s", services)
+	}
 
 	// configurable parameter
 	m.sendInterval = 200
@@ -391,27 +447,11 @@ func (m *IcmpDetectModule) processServiceIp(c *gin.Context) {
 	showConfigPage(c)
 }
 
-//func runRestControlInterface(ControlPort uint32) {
-//	gin.SetMode(gin.ReleaseMode)
-//	restful := gin.Default()
-//	restful.LoadHTMLFiles("resource/index.html")
-//	restful.Static("/static/", "resource")
-//
-//	restful.GET(URL_CONFIG_HOMEPAGE, showConfigPage)
-//	restful.GET(URL_CONFIG_SHOW_SERVICE_IP, showServiceIp)
-//	restful.POST(URL_CONFIG_ADD_SERVICE_IP, processServiceIp)
-//	restful.POST(URL_CONFIG_DEL_SERVICE_IP, processServiceIp)
-//
-//	err := restful.Run(fmt.Sprintf("[::]:%d", ControlPort))
-//	if err != nil {
-//		util.MaoLog(util.ERROR, fmt.Sprintf("Fail to run config server, %s", err.Error()))
-//	}
-//}
 
 func (m *IcmpDetectModule) configRestControlInterface() {
 	restfulServer := MaoCommon.ServiceRegistryGetRestfulServerModule()
 	if restfulServer == nil {
-		util.MaoLog(util.WARN, "Fail to get RestfulServerModule, unable to register restful apis.")
+		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to get RestfulServerModule, unable to register restful apis.")
 		return
 	}
 
