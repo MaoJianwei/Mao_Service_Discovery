@@ -84,7 +84,7 @@ func (C *ConfigYamlModule) GetConfig(path string) (object interface{}, errCode i
 	// TODO: timeout mechanism
 	ret := <-result
 
-	util.MaoLogM(util.WARN, MODULE_NAME, "GetConfig result: %v", ret)
+	util.MaoLogM(util.DEBUG, MODULE_NAME, "GetConfig result: %v", ret)
 	return ret.result, ret.errCode
 }
 
@@ -109,7 +109,7 @@ func (C *ConfigYamlModule) PutConfig(path string, data interface{}) (success boo
 		retBool = ret.result.(bool)
 	}
 
-	util.MaoLogM(util.WARN, MODULE_NAME, "PutConfig result: %v, %v", ret, retBool)
+	util.MaoLogM(util.DEBUG, MODULE_NAME, "PutConfig result: %v, %v", ret, retBool)
 	return retBool, ret.errCode
 }
 
@@ -164,6 +164,7 @@ func (C *ConfigYamlModule) eventLoop(config map[string]interface{}) {
 						errCode: ERR_CODE_PATH_TRANSIT_FAIL,
 						result:  nil,
 					}
+					util.MaoLogM(util.WARN, MODULE_NAME, "Fail to transit the specific config path.")
 					needTerminate = true
 					break // needTerminate -> continue
 				}
@@ -190,6 +191,7 @@ func (C *ConfigYamlModule) eventLoop(config map[string]interface{}) {
 						errCode: ERR_CODE_PATH_TRANSIT_FAIL,
 						result:  nil,
 					}
+					util.MaoLogM(util.WARN, MODULE_NAME, "Fail to transit the specific config path.")
 				} else {
 					result, ok := transitConfig[paths[len(paths)-1]]
 					event.result <- eventResult{
@@ -214,7 +216,7 @@ func (C *ConfigYamlModule) eventLoop(config map[string]interface{}) {
 				//}
 
 			case EVENT_PUT:
-				util.MaoLogM(util.INFO, MODULE_NAME, "EVENT_PUT, %s, %v, %v", event.path, event.data, event.result)
+				util.MaoLogM(util.DEBUG, MODULE_NAME, "EVENT_PUT, %s, %v, %v", event.path, event.data, event.result)
 
 				if !ok {
 					// Create transit path, and move transitConfig forward.
@@ -254,7 +256,7 @@ func (C *ConfigYamlModule) eventLoop(config map[string]interface{}) {
 				//}
 			}
 		case <-checkShutdownTimer.C:
-			util.MaoLog(util.INFO, fmt.Sprintf("CheckShutdown, event queue len %d", len(C.eventChannel)))
+			util.MaoLog(util.DEBUG, fmt.Sprintf("CheckShutdown, event queue len %d", len(C.eventChannel)))
 			if C.needShutdown && len(C.eventChannel) == 0 {
 				util.MaoLogM(util.INFO, MODULE_NAME, "Exit.")
 				return
