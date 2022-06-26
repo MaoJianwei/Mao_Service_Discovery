@@ -39,7 +39,7 @@ func MaoLog(level MaoLogLevel, format string, a ...interface{}) {
 func MaoLogM(level MaoLogLevel, moduleName string, format string, a ...interface{}) {
 	switch level {
 	case DEBUG:
-		fallthrough
+		//fallthrough
 	case INFO:
 		fallthrough
 	case WARN:
