@@ -393,7 +393,7 @@ func (m *IcmpDetectModule) InitIcmpModule() bool {
 	}
 
 	// configurable parameter
-	m.sendInterval = 200
+	m.sendInterval = 500
 	m.checkInterval = 500
 	m.leaveTimeout = 2000
 	m.refreshShowingInterval = 1000
