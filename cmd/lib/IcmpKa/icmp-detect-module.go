@@ -164,7 +164,7 @@ func (m *IcmpDetectModule) receiveProcessIcmpLoop(protoNum int, conn *icmp.Packe
 
 		icmpEcho, ok := msg.Body.(*icmp.Echo)
 		if !ok {
-			util.MaoLogM(util.WARN, MODULE_NAME, fmt.Sprintf("Fail to convert *icmp.Echo, freeze %d ms, %s", m.receiveFreezePeriod, err.Error()))
+			util.MaoLogM(util.WARN, MODULE_NAME, fmt.Sprintf("Fail to convert *icmp.Echo, freeze %d ms", m.receiveFreezePeriod))
 			time.Sleep(time.Duration(m.receiveFreezePeriod) * time.Millisecond)
 			continue
 		}

@@ -83,9 +83,9 @@ func showServerPlain(c *gin.Context) {
 
 func RunServer(
 	report_server_addr *net.IP, report_server_port uint32, web_server_addr *net.IP, web_server_port uint32,
-	dump_interval uint32, refresh_interval uint32, silent bool) {
+	dump_interval uint32, refresh_interval uint32, minLogLevel util.MaoLogLevel, silent bool) {
 
-	util.InitMaoLog()
+	util.InitMaoLog(minLogLevel)
 
 
 	// ====== Restful Server module - part 1/2 ======

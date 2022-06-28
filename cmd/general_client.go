@@ -2,7 +2,7 @@ package branch
 
 import (
 	pb "MaoServerDiscovery/grpc.maojianwei.com/server/discovery/api"
-	parent "MaoServerDiscovery/util"
+	util "MaoServerDiscovery/util"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	influxdb2Api "github.com/influxdata/influxdb-client-go/v2/api"
 	"strings"
@@ -27,26 +27,26 @@ func getNat66GatewayData() (uint64, uint64, error) {
 	ccc := exec.Command("/bin/bash", "-c", "ip6tables -nvxL FORWARD | grep MaoIPv6In | awk '{printf $2}'")
 	ininin, err := ccc.CombinedOutput()
 	if err != nil {
-		parent.MaoLog(parent.ERROR, "Fail to get MaoIPv6In, " + err.Error())
+		util.MaoLog(util.ERROR, "Fail to get MaoIPv6In, " + err.Error())
 		return 0, 0, err
 	}
 	ccc = exec.Command("/bin/bash", "-c", "ip6tables -nvxL FORWARD | grep MaoIPv6Out | awk '{printf $2}'")
 	outoutout, err := ccc.CombinedOutput()
 	if err != nil {
-		parent.MaoLog(parent.ERROR, "Fail to get MaoIPv6Out, " + err.Error())
+		util.MaoLog(util.ERROR, "Fail to get MaoIPv6Out, " + err.Error())
 		return 0, 0, err
 	}
 	v6In, err := strconv.ParseUint(string(ininin), 10, 64)
 	if err != nil {
-		parent.MaoLog(parent.ERROR, "Fail to parse MaoIPv6In, " + err.Error())
+		util.MaoLog(util.ERROR, "Fail to parse MaoIPv6In, " + err.Error())
 		return 0, 0, err
 	}
 	v6Out, err := strconv.ParseUint(string(outoutout), 10, 64)
 	if err != nil {
-		parent.MaoLog(parent.ERROR, "Fail to parse MaoIPv6Out, " + err.Error())
+		util.MaoLog(util.ERROR, "Fail to parse MaoIPv6Out, " + err.Error())
 		return 0, 0, err
 	}
-	parent.MaoLog(parent.DEBUG, fmt.Sprintf("v6In: %d , v6Out: %d", v6In, v6Out))
+	util.MaoLog(util.DEBUG, fmt.Sprintf("v6In: %d , v6Out: %d", v6In, v6Out))
 	return v6In, v6Out, nil
 }
 
@@ -88,18 +88,18 @@ func updateEnvironmentTemperature() {
 					temp, err := strconv.ParseFloat(tempText[1], 64)
 					if err == nil {
 						envTemp = temp / 1000
-						parent.MaoLog(parent.DEBUG, fmt.Sprintf("Get envTemp: %f, %f", temp, envTemp))
+						util.MaoLog(util.DEBUG, fmt.Sprintf("Get envTemp: %f, %f", temp, envTemp))
 					} else {
-						parent.MaoLog(parent.WARN, "Fail to parse temperature text, " + err.Error())
+						util.MaoLog(util.WARN, "Fail to parse temperature text, " + err.Error())
 					}
 				} else {
-					parent.MaoLog(parent.WARN, "Fail to parse 1-line protocol data slice, " + err.Error())
+					util.MaoLog(util.WARN, "Fail to parse 1-line protocol data slice, " + err.Error())
 				}
 			} else {
-				parent.MaoLog(parent.WARN, "Fail to parse 1-line protocol data, " + err.Error())
+				util.MaoLog(util.WARN, "Fail to parse 1-line protocol data, " + err.Error())
 			}
 		} else {
-			parent.MaoLog(parent.WARN, "Fail to get 1-line protocol data, " + err.Error())
+			util.MaoLog(util.WARN, "Fail to get 1-line protocol data, " + err.Error())
 		}
 		time.Sleep(500 * time.Millisecond)
 	}
@@ -107,12 +107,14 @@ func updateEnvironmentTemperature() {
 
 func RunGeneralClient(report_server_addr *net.IP, report_server_port uint32, report_interval uint32, silent bool,
 	nat66Gateway bool, nat66Persistent bool, influxdbUrl string, influxdbOrgBucket string, influxdbToken string,
-	envTempMonitor bool, envTempPersistent bool) {
+	envTempMonitor bool, envTempPersistent bool, minLogLevel util.MaoLogLevel) {
+
+	util.InitMaoLog(minLogLevel)
 
 	var influxdbClient influxdb2.Client
 	var influxdbWriteAPI influxdb2Api.WriteAPI
 	if nat66Persistent {
-		parent.MaoLog(parent.INFO, "Initiate influxdb client ...")
+		util.MaoLog(util.INFO, "Initiate influxdb client ...")
 		influxdbClient = influxdb2.NewClient(influxdbUrl, influxdbToken)
 		defer influxdbClient.Close()
 		influxdbWriteAPI = influxdbClient.WriteAPI(influxdbOrgBucket, influxdbOrgBucket)
@@ -121,44 +123,44 @@ func RunGeneralClient(report_server_addr *net.IP, report_server_port uint32, rep
 		go updateEnvironmentTemperature()
 	}
 
-	parent.MaoLog(parent.INFO, "Connect to center ...")
+	util.MaoLog(util.INFO, "Connect to center ...")
 	for {
-		serverAddr := parent.GetAddrPort(report_server_addr, report_server_port)
-		parent.MaoLog(parent.INFO, fmt.Sprintf("Connect to %s ...", serverAddr))
+		serverAddr := util.GetAddrPort(report_server_addr, report_server_port)
+		util.MaoLog(util.INFO, fmt.Sprintf("Connect to %s ...", serverAddr))
 
 		ctx, cancelCtx := context.WithTimeout(context.Background(), 3 * time.Second)
 		connect, err := grpc.DialContext(ctx, serverAddr, grpc.WithInsecure(), grpc.WithBlock())
 		if err != nil {
-			parent.MaoLog(parent.WARN, fmt.Sprintf("Retry, %s ...", err))
+			util.MaoLog(util.WARN, fmt.Sprintf("Retry, %s ...", err))
 			continue
 		}
 		cancelCtx()
-		parent.MaoLog(parent.INFO, "Connected.")
+		util.MaoLog(util.INFO, "Connected.")
 
 		client := pb.NewMaoServerDiscoveryClient(connect)
 		streamClient, err := client.Report(context.Background())
 		if err != nil {
-			parent.MaoLog(parent.ERROR, fmt.Sprintf("Fail to get streamClient, %s", err))
+			util.MaoLog(util.ERROR, fmt.Sprintf("Fail to get streamClient, %s", err))
 			continue
 		}
-		parent.MaoLog(parent.INFO, "Got StreamClient.")
+		util.MaoLog(util.INFO, "Got StreamClient.")
 
 		count := 1
 		for {
 			dataOk := true
-			hostname, _ := parent.GetHostname()
+			hostname, _ := util.GetHostname()
 			if err != nil {
 				hostname = "Mao-Unknown"
 				dataOk = false
 			}
 
-			ips, _ := parent.GetUnicastIp()
+			ips, _ := util.GetUnicastIp()
 			if err != nil {
 				ips = []string{"Mao-Fail", err.Error()}
 				dataOk = false
 			}
 
-			parent.MaoLog(parent.DEBUG, fmt.Sprintf("%d: To send", count))
+			util.MaoLog(util.DEBUG, fmt.Sprintf("%d: To send", count))
 			report := &pb.ServerReport{
 				Ok:          dataOk,
 				Hostname:    hostname,
@@ -185,13 +187,13 @@ func RunGeneralClient(report_server_addr *net.IP, report_server_port uint32, rep
 
 			err := streamClient.Send(report)
 			if err != nil {
-				parent.MaoLog(parent.ERROR, fmt.Sprintf("Fail to report, %s", err))
+				util.MaoLog(util.ERROR, fmt.Sprintf("Fail to report, %s", err))
 				break
 			}
 			if silent == false {
-				parent.MaoLog(parent.INFO, fmt.Sprintf("ServerReport - %v", report))
+				util.MaoLog(util.INFO, fmt.Sprintf("ServerReport - %v", report))
 			}
-			parent.MaoLog(parent.DEBUG, fmt.Sprintf("%d: Sent", count))
+			util.MaoLog(util.DEBUG, fmt.Sprintf("%d: Sent", count))
 
 			count++
 			time.Sleep(time.Duration(report_interval) * time.Millisecond)

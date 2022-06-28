@@ -15,6 +15,7 @@ var (
 	//main_server_addr net.IP
 	report_server_addr net.IP
 	report_server_port uint32
+	minLogLevel util.MaoLogLevel
 	silent bool
 
 
@@ -72,7 +73,7 @@ var generalClientCmd = &cobra.Command{
 
 		branch.RunGeneralClient(&report_server_addr, report_server_port, report_interval, silent,
 			nat66Gateway, nat66Persistent, influxdbUrl, influxdbOrgBucket, influxdbToken,
-			envTempMonitor, envTempPersistent)
+			envTempMonitor, envTempPersistent, minLogLevel)
 	},
 }
 
@@ -101,7 +102,7 @@ var serverCmd = &cobra.Command{
 		//
 		//fmt.Printf("---\n%v, %d\n", args, len(args))
 		//return
-		branch.RunServer(&report_server_addr, report_server_port, &web_server_addr, web_server_port, dump_interval, refresh_interval, silent)
+		branch.RunServer(&report_server_addr, report_server_port, &web_server_addr, web_server_port, dump_interval, refresh_interval, minLogLevel, silent)
 	},
 }
 
@@ -109,7 +110,8 @@ var serverCmd = &cobra.Command{
 Common:
 	- report_server_addr : connect to / listen on the addr, for service discovery
 	- report_server_port : connect to / listen on the port, for service discovery
-	- silent : if true, not output logs at DEBUG & INFO level
+	- log : min log level. If set to INFO, DEBUG log will not be outputted.
+	- silent : if true, no log will be outputted. prior to the log parameter.
 Server:
 	- web_server_addr : listen on the addr, for web control
 	- web_server_port : listen on the port, for web control
@@ -133,6 +135,7 @@ Client:
 func init() {
 	rootCmd.PersistentFlags().String("report_server_addr","::1","IP address for gRPC KA module. (e.g. 2001:db8::1)")
 	rootCmd.PersistentFlags().Uint32("report_server_port",28888,"Port for gRPC KA module.")
+	rootCmd.PersistentFlags().String("log_level", util.MaoLogLevelString[util.INFO],"The min level for the logs outputted. (e.g. DEBUG, INFO, WARN, ERROR, SILENT)")
 	rootCmd.PersistentFlags().Bool("silent", false,"Don't output the server list periodically. (default: false)")
 
 
@@ -176,6 +179,21 @@ func readRootArgs(cmd *cobra.Command) error {
 		return errors.New("report_server_port is invalid")
 	}
 
+	min_log_level, err := rootCmd.PersistentFlags().GetString("log_level")
+	if err != nil {
+		return err
+	}
+	found := false
+	for i, s := range util.MaoLogLevelString {
+		if s == min_log_level {
+			minLogLevel = util.MaoLogLevel(i)
+			found = true
+			break
+		}
+	}
+	if !found {
+		return errors.New("log_level is invalid")
+	}
 
 	silent, err = rootCmd.PersistentFlags().GetBool("silent")
 	if err != nil {
