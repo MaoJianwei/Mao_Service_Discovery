@@ -16,6 +16,10 @@ import (
 	"time"
 )
 
+const (
+	c_MODULE_NAME = "General-Client"
+)
+
 var (
 	envTemp float64
 )
@@ -27,26 +31,26 @@ func getNat66GatewayData() (uint64, uint64, error) {
 	ccc := exec.Command("/bin/bash", "-c", "ip6tables -nvxL FORWARD | grep MaoIPv6In | awk '{printf $2}'")
 	ininin, err := ccc.CombinedOutput()
 	if err != nil {
-		util.MaoLog(util.ERROR, "Fail to get MaoIPv6In, " + err.Error())
+		util.MaoLogM(util.ERROR, c_MODULE_NAME, "Fail to get MaoIPv6In, %s", err.Error())
 		return 0, 0, err
 	}
 	ccc = exec.Command("/bin/bash", "-c", "ip6tables -nvxL FORWARD | grep MaoIPv6Out | awk '{printf $2}'")
 	outoutout, err := ccc.CombinedOutput()
 	if err != nil {
-		util.MaoLog(util.ERROR, "Fail to get MaoIPv6Out, " + err.Error())
+		util.MaoLogM(util.ERROR, c_MODULE_NAME, "Fail to get MaoIPv6Out, %s", err.Error())
 		return 0, 0, err
 	}
 	v6In, err := strconv.ParseUint(string(ininin), 10, 64)
 	if err != nil {
-		util.MaoLog(util.ERROR, "Fail to parse MaoIPv6In, " + err.Error())
+		util.MaoLogM(util.ERROR, c_MODULE_NAME, "Fail to parse MaoIPv6In, %s", err.Error())
 		return 0, 0, err
 	}
 	v6Out, err := strconv.ParseUint(string(outoutout), 10, 64)
 	if err != nil {
-		util.MaoLog(util.ERROR, "Fail to parse MaoIPv6Out, " + err.Error())
+		util.MaoLogM(util.ERROR, c_MODULE_NAME, "Fail to parse MaoIPv6Out, %s", err.Error())
 		return 0, 0, err
 	}
-	util.MaoLog(util.DEBUG, fmt.Sprintf("v6In: %d , v6Out: %d", v6In, v6Out))
+	util.MaoLogM(util.DEBUG, c_MODULE_NAME, "v6In: %d , v6Out: %d", v6In, v6Out)
 	return v6In, v6Out, nil
 }
 
@@ -88,18 +92,18 @@ func updateEnvironmentTemperature() {
 					temp, err := strconv.ParseFloat(tempText[1], 64)
 					if err == nil {
 						envTemp = temp / 1000
-						util.MaoLog(util.DEBUG, fmt.Sprintf("Get envTemp: %f, %f", temp, envTemp))
+						util.MaoLogM(util.DEBUG, c_MODULE_NAME, "Get envTemp: %f, %f", temp, envTemp)
 					} else {
-						util.MaoLog(util.WARN, "Fail to parse temperature text, " + err.Error())
+						util.MaoLogM(util.WARN, c_MODULE_NAME, "Fail to parse temperature text, %s", err.Error())
 					}
 				} else {
-					util.MaoLog(util.WARN, "Fail to parse 1-line protocol data slice, " + err.Error())
+					util.MaoLogM(util.WARN, c_MODULE_NAME, "Fail to parse 1-line protocol data slice, %s", err.Error())
 				}
 			} else {
-				util.MaoLog(util.WARN, "Fail to parse 1-line protocol data, " + err.Error())
+				util.MaoLogM(util.WARN, c_MODULE_NAME, "Fail to parse 1-line protocol data, %s", err.Error())
 			}
 		} else {
-			util.MaoLog(util.WARN, "Fail to get 1-line protocol data, " + err.Error())
+			util.MaoLogM(util.WARN, c_MODULE_NAME, "Fail to get 1-line protocol data, %s", err.Error())
 		}
 		time.Sleep(500 * time.Millisecond)
 	}
@@ -114,7 +118,7 @@ func RunGeneralClient(report_server_addr *net.IP, report_server_port uint32, rep
 	var influxdbClient influxdb2.Client
 	var influxdbWriteAPI influxdb2Api.WriteAPI
 	if nat66Persistent {
-		util.MaoLog(util.INFO, "Initiate influxdb client ...")
+		util.MaoLogM(util.INFO, c_MODULE_NAME, "Initiate influxdb client ...")
 		influxdbClient = influxdb2.NewClient(influxdbUrl, influxdbToken)
 		defer influxdbClient.Close()
 		influxdbWriteAPI = influxdbClient.WriteAPI(influxdbOrgBucket, influxdbOrgBucket)
@@ -123,27 +127,27 @@ func RunGeneralClient(report_server_addr *net.IP, report_server_port uint32, rep
 		go updateEnvironmentTemperature()
 	}
 
-	util.MaoLog(util.INFO, "Connect to center ...")
+	util.MaoLogM(util.INFO, c_MODULE_NAME, "Connect to center ...")
 	for {
 		serverAddr := util.GetAddrPort(report_server_addr, report_server_port)
-		util.MaoLog(util.INFO, fmt.Sprintf("Connect to %s ...", serverAddr))
+		util.MaoLogM(util.INFO, c_MODULE_NAME, "Connect to %s ...", serverAddr)
 
 		ctx, cancelCtx := context.WithTimeout(context.Background(), 3 * time.Second)
 		connect, err := grpc.DialContext(ctx, serverAddr, grpc.WithInsecure(), grpc.WithBlock())
 		if err != nil {
-			util.MaoLog(util.WARN, fmt.Sprintf("Retry, %s ...", err))
+			util.MaoLogM(util.WARN, c_MODULE_NAME, "Retry, %s ...", err.Error())
 			continue
 		}
 		cancelCtx()
-		util.MaoLog(util.INFO, "Connected.")
+		util.MaoLogM(util.INFO, c_MODULE_NAME, "Connected.")
 
 		client := pb.NewMaoServerDiscoveryClient(connect)
 		streamClient, err := client.Report(context.Background())
 		if err != nil {
-			util.MaoLog(util.ERROR, fmt.Sprintf("Fail to get streamClient, %s", err))
+			util.MaoLogM(util.ERROR, c_MODULE_NAME, "Fail to get streamClient, %s", err.Error())
 			continue
 		}
-		util.MaoLog(util.INFO, "Got StreamClient.")
+		util.MaoLogM(util.INFO, c_MODULE_NAME, "Got StreamClient.")
 
 		count := 1
 		for {
@@ -160,7 +164,7 @@ func RunGeneralClient(report_server_addr *net.IP, report_server_port uint32, rep
 				dataOk = false
 			}
 
-			util.MaoLog(util.DEBUG, fmt.Sprintf("%d: To send", count))
+			util.MaoLogM(util.DEBUG, c_MODULE_NAME, "%d: To send", count)
 			report := &pb.ServerReport{
 				Ok:          dataOk,
 				Hostname:    hostname,
@@ -187,13 +191,13 @@ func RunGeneralClient(report_server_addr *net.IP, report_server_port uint32, rep
 
 			err := streamClient.Send(report)
 			if err != nil {
-				util.MaoLog(util.ERROR, fmt.Sprintf("Fail to report, %s", err))
+				util.MaoLogM(util.ERROR, c_MODULE_NAME, "Fail to report, %s", err.Error())
 				break
 			}
 			if silent == false {
-				util.MaoLog(util.INFO, fmt.Sprintf("ServerReport - %v", report))
+				util.MaoLogM(util.INFO, c_MODULE_NAME, "ServerReport - %v", report)
 			}
-			util.MaoLog(util.DEBUG, fmt.Sprintf("%d: Sent", count))
+			util.MaoLogM(util.DEBUG, c_MODULE_NAME, "%d: Sent", count)
 
 			count++
 			time.Sleep(time.Duration(report_interval) * time.Millisecond)

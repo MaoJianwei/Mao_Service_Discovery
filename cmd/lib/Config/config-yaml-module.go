@@ -2,7 +2,6 @@ package Config
 
 import (
 	"MaoServerDiscovery/util"
-	"fmt"
 	yaml "gopkg.in/yaml.v3"
 	"io/ioutil"
 	"log"
@@ -256,7 +255,7 @@ func (C *ConfigYamlModule) eventLoop(config map[string]interface{}) {
 				//}
 			}
 		case <-checkShutdownTimer.C:
-			util.MaoLog(util.DEBUG, fmt.Sprintf("CheckShutdown, event queue len %d", len(C.eventChannel)))
+			util.MaoLogM(util.DEBUG, MODULE_NAME, "CheckShutdown, event queue len %d", len(C.eventChannel))
 			if C.needShutdown && len(C.eventChannel) == 0 {
 				util.MaoLogM(util.INFO, MODULE_NAME, "Exit.")
 				return
@@ -296,7 +295,7 @@ func (C *ConfigYamlModule) InitConfigModule(configFilename string) bool {
 
 	config, err := C.loadConfig()
 	if err != nil {
-		util.MaoLog(util.ERROR, "ConfigModule: Fail to load config, err: %s", err.Error())
+		util.MaoLogM(util.ERROR, MODULE_NAME, "ConfigModule: Fail to load config, err: %s", err.Error())
 		return false
 	}
 

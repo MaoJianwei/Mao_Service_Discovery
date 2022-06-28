@@ -2,8 +2,11 @@ package Restful
 
 import (
 	"MaoServerDiscovery/util"
-	"fmt"
 	"github.com/gin-gonic/gin"
+)
+
+const (
+	MODULE_NAME = "Restful-Server-module"
 )
 
 type RestfulServerImpl struct {
@@ -31,10 +34,10 @@ func (r *RestfulServerImpl) RegisterPostApi(relativePath string, handlers ...gin
 
 
 func (r *RestfulServerImpl) startRestfulServer() {
-	util.MaoLog(util.INFO, fmt.Sprintf("Starting web show %s ...", r.serviceAddr))
+	util.MaoLogM(util.INFO, MODULE_NAME, "Starting web show %s ...", r.serviceAddr)
 	err := r.restful.Run(r.serviceAddr)
 	if err != nil {
-		util.MaoLog(util.ERROR, fmt.Sprintf("Fail to run rest server, %s", err))
+		util.MaoLogM(util.ERROR, MODULE_NAME, "Fail to run rest server, %s", err)
 	}
 }
 

@@ -4,7 +4,6 @@ import (
 	branch "MaoServerDiscovery/cmd"
 	"MaoServerDiscovery/util"
 	"errors"
-	"fmt"
 	"github.com/spf13/cobra"
 	"net"
 	"os"
@@ -48,7 +47,7 @@ var rootCmd = &cobra.Command{
 	Version: "1.0",
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := cmd.Help(); err != nil {
-			util.MaoLog(util.ERROR, fmt.Sprintf("Fail to execute rootCmd.Help(): %s", err))
+			util.MaoLog(util.ERROR, "Fail to execute rootCmd.Help(): %s", err.Error())
 		}
 	},
 }
@@ -61,7 +60,7 @@ var generalClientCmd = &cobra.Command{
 	Version: "1.0",
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := readGeneralClientArgs(cmd); err != nil {
-			util.MaoLog(util.ERROR, fmt.Sprintf("Wrong Args for general client: %s", err))
+			util.MaoLog(util.ERROR, "Wrong Args for general client: %s", err.Error())
 			return
 		}
 
@@ -86,7 +85,7 @@ var serverCmd = &cobra.Command{
 	Version: "1.0",
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := readServerArgs(cmd); err != nil {
-			util.MaoLog(util.ERROR, fmt.Sprintf("Wrong Args for server: %s", err))
+			util.MaoLog(util.ERROR, "Wrong Args for server: %s", err.Error())
 			return
 		}
 

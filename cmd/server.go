@@ -16,6 +16,10 @@ import (
 	"time"
 )
 
+const (
+	s_MODULE_NAME = "General-Server"
+)
+
 var (
 	serviceAlive []*MaoApi.GrpcServiceNode
 )
@@ -26,7 +30,7 @@ func updateServerAlive(refresh_interval uint32) {
 
 		grpcModule := MaoCommon.ServiceRegistryGetGrpcKaModule()
 		if grpcModule == nil {
-			util.MaoLog(util.WARN, "Fail to get GrpcKaModule")
+			util.MaoLogM(util.WARN, s_MODULE_NAME, "Fail to get GrpcKaModule")
 			continue
 		}
 		serviceInfo := grpcModule.GetServiceInfo()
@@ -56,7 +60,7 @@ func startCliOutput(dump_interval uint32) {
 		for _, s := range services {
 			dump = fmt.Sprintf("%s%s => %s - %s\n", dump, s.Hostname, s.LocalLastSeen, s.Ips)
 		}
-		util.MaoLog(util.INFO, fmt.Sprintf("========== %d ==========\n%s", count, dump))
+		util.MaoLogM(util.INFO, s_MODULE_NAME, "========== %d ==========\n%s", count, dump)
 
 		count++
 		time.Sleep(time.Duration(dump_interval) * time.Millisecond)

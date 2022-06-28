@@ -4,7 +4,6 @@ import (
 	"MaoServerDiscovery/cmd/lib/Config"
 	"MaoServerDiscovery/cmd/lib/MaoCommon"
 	"MaoServerDiscovery/util"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"
@@ -78,13 +77,13 @@ type IcmpDetectModule struct {
 func (m *IcmpDetectModule) sendIcmpLoop() {
 	round := 1
 	for {
-		util.MaoLogM(util.DEBUG, MODULE_NAME, fmt.Sprintf("Detect Round %d", round))
+		util.MaoLogM(util.DEBUG, MODULE_NAME, "Detect Round %d", round)
 		m.serviceStore.Range(func(_, value interface{}) bool {
 			service := value.(*MaoIcmpService)
 
 			addr, err := net.ResolveIPAddr("ip", service.Address)
 			if err != nil {
-				util.MaoLogM(util.WARN, MODULE_NAME, fmt.Sprintf("Fail to ResolveIPAddr v4v6Addr: %s", err.Error()))
+				util.MaoLogM(util.WARN, MODULE_NAME, "Fail to ResolveIPAddr v4v6Addr: %s", err.Error())
 				return true // for continuous iteration
 			}
 
@@ -122,14 +121,14 @@ func (m *IcmpDetectModule) sendIcmpLoop() {
 			// do le->be in the Marshal
 			icmpMsgByte, err := icmpMsg.Marshal(nil)
 			if err != nil {
-				util.MaoLogM(util.WARN, MODULE_NAME, fmt.Sprintf("Fail to marshal icmpMsg: %s", err.Error()))
+				util.MaoLogM(util.WARN, MODULE_NAME, "Fail to marshal icmpMsg: %s", err.Error())
 				return true
 			}
 
 			service.RttOutboundTimestamp = time.Now()
 			_, err = conn.WriteTo(icmpMsgByte, addr)
 			if err != nil {
-				util.MaoLogM(util.WARN, MODULE_NAME, fmt.Sprintf("Fail to WriteTo connV6: %s", err.Error()))
+				util.MaoLogM(util.WARN, MODULE_NAME, "Fail to WriteTo connV6: %s", err.Error())
 				return true
 			}
 
@@ -150,25 +149,25 @@ func (m *IcmpDetectModule) receiveProcessIcmpLoop(protoNum int, conn *icmp.Packe
 		count, addr, err := conn.ReadFrom(recvBuf)
 		lastseen := time.Now()
 		if err != nil {
-			util.MaoLogM(util.WARN, MODULE_NAME, fmt.Sprintf("Fail to recv ICMP, freeze %d ms, %s", m.receiveFreezePeriod, err.Error()))
+			util.MaoLogM(util.WARN, MODULE_NAME, "Fail to recv ICMP, freeze %d ms, %s", m.receiveFreezePeriod, err.Error())
 			time.Sleep(time.Duration(m.receiveFreezePeriod) * time.Millisecond)
 			continue
 		}
 
 		msg, err := icmp.ParseMessage(protoNum, recvBuf)
 		if err != nil {
-			util.MaoLogM(util.WARN, MODULE_NAME, fmt.Sprintf("Fail to parse ICMP, freeze %d ms, %s", m.receiveFreezePeriod, err.Error()))
+			util.MaoLogM(util.WARN, MODULE_NAME, "Fail to parse ICMP, freeze %d ms, %s", m.receiveFreezePeriod, err.Error())
 			time.Sleep(time.Duration(m.receiveFreezePeriod) * time.Millisecond)
 			continue
 		}
 
 		icmpEcho, ok := msg.Body.(*icmp.Echo)
 		if !ok {
-			util.MaoLogM(util.WARN, MODULE_NAME, fmt.Sprintf("Fail to convert *icmp.Echo, freeze %d ms", m.receiveFreezePeriod))
+			util.MaoLogM(util.WARN, MODULE_NAME, "Fail to convert *icmp.Echo, freeze %d ms", m.receiveFreezePeriod)
 			time.Sleep(time.Duration(m.receiveFreezePeriod) * time.Millisecond)
 			continue
 		}
-		util.MaoLogM(util.DEBUG, MODULE_NAME, fmt.Sprintf("%v, %v = %v, %v, %v, %v, %v, %v", count, addr, msg.Type, msg.Code, msg.Checksum, icmpEcho.ID, icmpEcho.Seq, icmpEcho.Data))
+		util.MaoLogM(util.DEBUG, MODULE_NAME, "%v, %v = %v, %v, %v, %v, %v, %v", count, addr, msg.Type, msg.Code, msg.Checksum, icmpEcho.ID, icmpEcho.Seq, icmpEcho.Data)
 
 		var addrStr string
 		if protoNum == PROTO_ICMP_V6 {
@@ -202,12 +201,12 @@ func (m *IcmpDetectModule) controlLoop() {
 					RttDuration:          0,
 					RttOutboundTimestamp: time.Time{},
 				})
-				util.MaoLogM(util.DEBUG, MODULE_NAME, fmt.Sprintf("Get new service %s", addService))
+				util.MaoLogM(util.DEBUG, MODULE_NAME, "Get new service %s", addService)
 				m.addNewServiceToConfig(addService)
 			}
 		case delService := <-m.DelChan:
 			m.serviceStore.Delete(delService)
-			util.MaoLogM(util.DEBUG, MODULE_NAME, fmt.Sprintf("Del service %s", delService))
+			util.MaoLogM(util.DEBUG, MODULE_NAME, "Del service %s", delService)
 			m.removeOldServiceFromConfig(delService)
 		case <-checkTimer.C:
 			// aliveness checking
@@ -366,14 +365,14 @@ func (m *IcmpDetectModule) InitIcmpModule() bool {
 	var err error
 	m.connV4, err = icmp.ListenPacket("ip4:icmp", "0.0.0.0")
 	if err != nil {
-		util.MaoLogM(util.ERROR, MODULE_NAME, fmt.Sprintf("Fail to listen ICMP, %s", err.Error()))
+		util.MaoLogM(util.ERROR, MODULE_NAME, "Fail to listen ICMP, %s", err.Error())
 		return false
 	}
 	util.MaoLogM(util.INFO, MODULE_NAME, "Listen ICMP ok")
 
 	m.connV6, err = icmp.ListenPacket("ip6:ipv6-icmp", "::")
 	if err != nil {
-		util.MaoLogM(util.ERROR, MODULE_NAME, fmt.Sprintf("Fail to listen ICMPv6, %s", err.Error()))
+		util.MaoLogM(util.ERROR, MODULE_NAME, "Fail to listen ICMPv6, %s", err.Error())
 		return false
 	}
 	util.MaoLogM(util.INFO, MODULE_NAME, "Listen ICMPv6 ok")

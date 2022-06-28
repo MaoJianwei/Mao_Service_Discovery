@@ -4,7 +4,6 @@ import (
 	MaoApi "MaoServerDiscovery/cmd/api"
 	pb "MaoServerDiscovery/grpc.maojianwei.com/server/discovery/api"
 	"MaoServerDiscovery/util"
-	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
@@ -13,6 +12,9 @@ import (
 	"time"
 )
 
+const (
+	MODULE_NAME = "GRPC-Detect-module"
+)
 
 type GrpcDetectModule struct {
 	serverInfo sync.Map
@@ -24,13 +26,13 @@ type GrpcDetectModule struct {
 
 // implement pb.UnimplementedMaoServerDiscoveryServer
 func (g *GrpcDetectModule) Report(reportStream pb.MaoServerDiscovery_ReportServer) error {
-	util.MaoLog(util.DEBUG, fmt.Sprintf("Triggered new report round"))
+	util.MaoLogM(util.DEBUG, MODULE_NAME, "Triggered new report round")
 	ctx := reportStream.Context()
 	peerCtx, okbool := peer.FromContext(ctx)
 	peerMetadata, okbool := metadata.FromIncomingContext(ctx)
 	transportstream := grpc.ServerTransportStreamFromContext(ctx)
-	util.MaoLog(util.INFO, fmt.Sprintf("New server comming: %s", peerCtx.Addr.String()))
-	util.MaoLog(util.DEBUG, fmt.Sprintf("\n%v\n%v\n%v", peerCtx, peerMetadata, transportstream))
+	util.MaoLogM(util.INFO, MODULE_NAME, "New server comming: %s", peerCtx.Addr.String())
+	util.MaoLogM(util.DEBUG, MODULE_NAME, "\n%v\n%v\n%v", peerCtx, peerMetadata, transportstream)
 	if !okbool {
 	}
 	_ = g.dealRecv(reportStream)
@@ -50,10 +52,10 @@ func (g *GrpcDetectModule) dealRecv(reportStream pb.MaoServerDiscovery_ReportSer
 	for {
 		report, err := reportStream.Recv()
 		if err != nil {
-			util.MaoLog(util.ERROR, fmt.Sprintf("Report err: <%s> %s", clientAddr, err))
+			util.MaoLogM(util.ERROR, MODULE_NAME, "Report err: <%s> %s", clientAddr, err)
 			return err
 		}
-		util.MaoLog(util.DEBUG, fmt.Sprintf("Report get: <%s> %s, %v", clientAddr, report.GetHostname(), report.GetIps()))
+		util.MaoLogM(util.DEBUG, MODULE_NAME, "Report get: <%s> %s, %v", clientAddr, report.GetHostname(), report.GetIps())
 		if report.GetOk() {
 			g.mergeChannel <- &MaoApi.GrpcServiceNode{
 				ReportTimes:    count,
@@ -70,11 +72,11 @@ func (g *GrpcDetectModule) dealRecv(reportStream pb.MaoServerDiscovery_ReportSer
 }
 
 func (g *GrpcDetectModule) runGrpcServer(listener net.Listener) {
-	util.MaoLog(util.INFO, fmt.Sprintf("Server running %s ...", listener.Addr().String()))
+	util.MaoLogM(util.INFO, MODULE_NAME, "Server running %s ...", listener.Addr().String())
 	if err := g.server.Serve(listener); err != nil {
-		util.MaoLog(util.ERROR, fmt.Sprintf("%s", err))
+		util.MaoLogM(util.ERROR, MODULE_NAME, "%s", err)
 	}
-	util.MaoLog(util.INFO, "Serve over")
+	util.MaoLogM(util.INFO, MODULE_NAME, "Serve over")
 }
 
 
@@ -99,7 +101,7 @@ func (g *GrpcDetectModule) InitGrpcModule(addrPort string) bool {
 
 	listener, err := net.Listen("tcp", addrPort)
 	if err != nil {
-		util.MaoLog(util.WARN, "Fail to create listener at %s, err: %s", addrPort, err.Error())
+		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to create listener at %s, err: %s", addrPort, err.Error())
 		return false
 	}
 
