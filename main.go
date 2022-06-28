@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"runtime"
+	"strings"
 )
 
 var (
@@ -135,7 +136,7 @@ Client:
 func init() {
 	rootCmd.PersistentFlags().String("report_server_addr","::1","IP address for gRPC KA module. (e.g. 2001:db8::1)")
 	rootCmd.PersistentFlags().Uint32("report_server_port",28888,"Port for gRPC KA module.")
-	rootCmd.PersistentFlags().String("log_level", util.MaoLogLevelString[util.INFO],"The min level for the logs outputted. (e.g. DEBUG, INFO, WARN, ERROR, SILENT)")
+	rootCmd.PersistentFlags().String("log_level", "INFO","The min level for the logs outputted. (e.g. DEBUG, INFO, WARN, ERROR, SILENT)")
 	rootCmd.PersistentFlags().Bool("silent", false,"Don't output the server list periodically. (default: false)")
 
 
@@ -185,7 +186,7 @@ func readRootArgs(cmd *cobra.Command) error {
 	}
 	found := false
 	for i, s := range util.MaoLogLevelString {
-		if s == min_log_level {
+		if strings.Contains(s, min_log_level) {
 			minLogLevel = util.MaoLogLevel(i)
 			found = true
 			break

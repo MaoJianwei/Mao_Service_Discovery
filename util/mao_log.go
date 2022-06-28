@@ -27,14 +27,14 @@ func InitMaoLog(minLogLevel MaoLogLevel) {
 }
 
 func MaoLog(level MaoLogLevel, format string, a ...interface{}) {
-	if minShowingLevel > level {
+	if minShowingLevel > level || minShowingLevel == SILENT {
 		return
 	}
 	log.Printf("%s: %s", MaoLogLevelString[level], fmt.Sprintf(format, a...))
 }
 
 func MaoLogM(level MaoLogLevel, moduleName string, format string, a ...interface{}) {
-	if minShowingLevel > level {
+	if minShowingLevel > level || minShowingLevel == SILENT {
 		return
 	}
 	log.Printf("%s: %s: %s", MaoLogLevelString[level], moduleName, fmt.Sprintf(format, a ...))
