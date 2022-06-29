@@ -27,7 +27,7 @@ Discover your service by two methods:
 ![client-server-mode-production.png](https://raw.githubusercontent.com/MaoJianwei/MaoServiceDiscovery/master/screenshot/client-server-mode-production.png)
 
 ### Demo 2: Using etcd.
-![Using etcd.](https://raw.githubusercontent.com/MaoJianwei/MaoServiceDiscovery/master/bak_using_etcd/screenshot/show_using_etcd.png)
+![Using etcd.](https://raw.githubusercontent.com/MaoJianwei/Mao_Service_Discovery/master/screenshot/show_using_etcd.png)
 
 ## Architect
 
