@@ -212,7 +212,7 @@ func (m *IcmpDetectModule) controlLoop() {
 			// aliveness checking
 			m.serviceStore.Range(func(key, value interface{}) bool {
 				service := value.(*MaoIcmpService)
-				if service.Alive && time.Since(service.LastSeen) > time.Duration(m.leaveTimeout) * time.Second {
+				if service.Alive && time.Since(service.LastSeen) > time.Duration(m.leaveTimeout) * time.Millisecond {
 					service.Alive = false
 				}
 				return true
