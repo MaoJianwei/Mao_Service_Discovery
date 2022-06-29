@@ -83,6 +83,27 @@ func showServerPlain(c *gin.Context) {
 	c.Header("Content-Type", "text/html; charset=utf-8")
 	c.String(200, dump)
 }
+func showMergeServer(c *gin.Context) {
+	c.HTML(200, "index-server.html", nil)
+}
+func showMergeServiceIP(c *gin.Context) {
+	ret := make([]interface{}, 0)
+
+	icmpModule := MaoCommon.ServiceRegistryGetIcmpKaModule()
+	if icmpModule == nil {
+		util.MaoLogM(util.WARN, s_MODULE_NAME, "Fail to get IcmpKaModule")
+		c.JSON(202, ret)
+	}
+	services := icmpModule.GetServices()
+	for _, s := range services {
+		ret = append(ret, s)
+	}
+
+	for _, s := range serviceAlive {
+		ret = append(ret, s)
+	}
+	c.JSON(200, ret)
+}
 
 
 func RunServer(
@@ -100,7 +121,9 @@ func RunServer(
 
 	// register server.go's api
 	restfulServer.RegisterGetApi("/json", showServers)
-	restfulServer.RegisterGetApi("/", showServerPlain)
+	restfulServer.RegisterGetApi("/plain", showServerPlain)
+	restfulServer.RegisterGetApi("/showMergeServiceIP", showMergeServiceIP)
+	restfulServer.RegisterGetApi("/", showMergeServer)
 	// ==============================================
 
 

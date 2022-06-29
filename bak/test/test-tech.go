@@ -57,7 +57,7 @@ package main
 //}
 //
 //func showConfigPage(c *gin.Context) {
-//	c.HTML(200, "index.html", nil)
+//	c.HTML(200, "index-icmp.html", nil)
 //}
 //
 //func addServiceIp(c *gin.Context) {
@@ -76,7 +76,7 @@ package main
 //func startRestServer() {
 //	gin.SetMode(gin.ReleaseMode)
 //	restful := gin.Default()
-//	restful.LoadHTMLFiles("index.html")
+//	restful.LoadHTMLFiles("index-icmp.html")
 //	restful.GET("/", showConfigPage)
 //	restful.POST("/addServiceIp", addServiceIp)
 //	err := restful.Run("[::]:9876")

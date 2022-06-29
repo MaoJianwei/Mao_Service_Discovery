@@ -233,7 +233,7 @@ func showServiceIp(c *gin.Context) {
 }
 
 func showConfigPage(c *gin.Context) {
-	c.HTML(200, "index.html", nil)
+	c.HTML(200, "index-icmp.html", nil)
 }
 
 func processServiceIp(c *gin.Context) {
@@ -251,13 +251,13 @@ func processServiceIp(c *gin.Context) {
 			}
 		}
 	}
-	c.HTML(200, "index.html", nil)
+	c.HTML(200, "index-icmp.html", nil)
 }
 
 func runRestControlInterface(controlPort uint32) {
 	gin.SetMode(gin.ReleaseMode)
 	restful := gin.Default()
-	restful.LoadHTMLFiles("resource/index.html")
+	restful.LoadHTMLFiles("resource/index-icmp.html")
 	restful.Static("/static/", "resource")
 
 	restful.GET(URL_CONFIG_HOMEPAGE, showConfigPage)

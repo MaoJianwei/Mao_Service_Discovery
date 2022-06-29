@@ -1,6 +1,7 @@
 package IcmpKa
 
 import (
+	MaoApi "MaoServerDiscovery/cmd/api"
 	"MaoServerDiscovery/cmd/lib/Config"
 	"MaoServerDiscovery/cmd/lib/MaoCommon"
 	"MaoServerDiscovery/util"
@@ -38,19 +39,6 @@ const (
 	SERVICE_LIST_CONFIG_PATH = "/icmp-ka/services"
 )
 
-type MaoIcmpService struct {
-	Address string
-
-	Alive    bool
-	LastSeen time.Time
-
-	DetectCount uint64
-	ReportCount uint64
-
-	RttDuration          int64
-	RttOutboundTimestamp time.Time
-}
-
 type IcmpDetectModule struct {
 	connV4       *icmp.PacketConn
 	connV6       *icmp.PacketConn
@@ -71,7 +59,7 @@ type IcmpDetectModule struct {
 	receiveFreezePeriod uint32 // milliseconds - mitigate attack with malformed packets.
 
 	// only for web showing
-	configService  []*MaoIcmpService
+	configService  []*MaoApi.MaoIcmpService
 }
 
 func (m *IcmpDetectModule) sendIcmpLoop() {
@@ -79,7 +67,7 @@ func (m *IcmpDetectModule) sendIcmpLoop() {
 	for {
 		util.MaoLogM(util.DEBUG, MODULE_NAME, "Detect Round %d", round)
 		m.serviceStore.Range(func(_, value interface{}) bool {
-			service := value.(*MaoIcmpService)
+			service := value.(*MaoApi.MaoIcmpService)
 
 			addr, err := net.ResolveIPAddr("ip", service.Address)
 			if err != nil {
@@ -177,7 +165,7 @@ func (m *IcmpDetectModule) receiveProcessIcmpLoop(protoNum int, conn *icmp.Packe
 		}
 		value, ok := m.serviceStore.Load(addrStr)
 		if ok && value != nil {
-			service := value.(*MaoIcmpService)
+			service := value.(*MaoApi.MaoIcmpService)
 			service.Alive = true
 			service.LastSeen = lastseen
 			service.RttDuration = service.LastSeen.Sub(service.RttOutboundTimestamp).Nanoseconds()
@@ -192,7 +180,7 @@ func (m *IcmpDetectModule) controlLoop() {
 		select {
 		case addService := <-m.AddChan:
 			if _, ok := m.serviceStore.Load(addService); !ok {
-				m.serviceStore.Store(addService, &MaoIcmpService{
+				m.serviceStore.Store(addService, &MaoApi.MaoIcmpService{
 					Address:              addService,
 					Alive:                false,
 					LastSeen:             time.Unix(0, 0),
@@ -211,7 +199,7 @@ func (m *IcmpDetectModule) controlLoop() {
 		case <-checkTimer.C:
 			// aliveness checking
 			m.serviceStore.Range(func(key, value interface{}) bool {
-				service := value.(*MaoIcmpService)
+				service := value.(*MaoApi.MaoIcmpService)
 				if service.Alive && time.Since(service.LastSeen) > time.Duration(m.leaveTimeout) * time.Millisecond {
 					service.Alive = false
 				}
@@ -225,9 +213,9 @@ func (m *IcmpDetectModule) controlLoop() {
 func (m *IcmpDetectModule) refreshShowingService() {
 	for {
 		time.Sleep(time.Duration(m.refreshShowingInterval) * time.Millisecond)
-		newConfigService := []*MaoIcmpService{}
+		newConfigService := []*MaoApi.MaoIcmpService{}
 		m.serviceStore.Range(func(_, value interface{}) bool {
-			newConfigService = append(newConfigService, value.(*MaoIcmpService))
+			newConfigService = append(newConfigService, value.(*MaoApi.MaoIcmpService))
 			return true
 		})
 		m.configService = newConfigService
@@ -399,7 +387,7 @@ func (m *IcmpDetectModule) InitIcmpModule() bool {
 
 	// tunable configurable parameter
 	m.receiveFreezePeriod = 10
-	m.configService = []*MaoIcmpService{}
+	m.configService = []*MaoApi.MaoIcmpService{}
 
 
 	go m.receiveProcessIcmpLoop(PROTO_ICMP, m.connV4)
@@ -416,18 +404,20 @@ func (m *IcmpDetectModule) InitIcmpModule() bool {
 
 
 
-
-
-func showConfigPage(c *gin.Context) {
-	c.HTML(200, "index.html", nil)
-}
-
-func (m *IcmpDetectModule) showServiceIps(c *gin.Context) {
+func (m *IcmpDetectModule) GetServices() []*MaoApi.MaoIcmpService {
 	tmp := m.configService
 	sort.Slice(tmp, func(i, j int) bool {
 		return tmp[i].Address < tmp[j].Address
 	})
-	c.JSON(200, tmp)
+	return tmp
+}
+
+func showConfigPage(c *gin.Context) {
+	c.HTML(200, "index-icmp.html", nil)
+}
+
+func (m *IcmpDetectModule) showServiceIps(c *gin.Context) {
+	c.JSON(200, m.GetServices())
 }
 
 func (m *IcmpDetectModule) processServiceIp(c *gin.Context) {

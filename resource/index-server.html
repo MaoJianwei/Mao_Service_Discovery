@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<!--enctype="application/json"-->
+<form action="/addServiceIp" method="post">
+    New ICMP Services<br/>
+    <textarea rows="6" cols="50" name="ipv4v6"></textarea><br/>
+    <input type="submit" value="Add" />
+</form>
+<br/>
+
+<div id="services"></div>
+<script src="/static/jquery-3.6.0.min.js" type="text/javascript"></script>
+<script>
+    $.get("/showMergeServiceIP",function (response, status, xhr) {
+        services = "Services " + response.length + "<br/>"
+        services += "<table border=\"1\"><tr><th>Service IP</th><th>Report IP</th><th>Alive</th><th>DetectCount</th><th>ReportCount</th><th>LastSeen</th><th>RttDuration</th><th>RttOutboundTimestamp/RemoteTimestamp</th><th>OtherData</th></tr>"
+
+        $.each(response, function(index, item) {
+            services += "<tr><td><form action=\"/delServiceIp\" method=\"post\">"
+            if (item['Address'] == null) {
+                services += "<input type=\"submit\" value=\"Delete\" disabled/>"
+            } else {
+                services += "<input type=\"submit\" value=\"Delete\" />"
+            }
+            services += "<input type=\"text\" name='ipv4v6' style='width:280px' readonly value='" + (item['Hostname']!=null?(item['Hostname']+" - "+item['RealClientAddr']):item['Address']) + "'/></form></td>"
+
+            services += "<td>"
+            if (item["Ips"] != null) {
+                item["Ips"].forEach( ip => {
+                    services += ip + "<br/>"
+                })
+            } else {
+                services += "/"
+            }
+            services += "</td>"
+
+            services += "<td>" + (item["Alive"]!=null?item["Alive"]:true) + "</td>"
+            services += "<td>" + (item["DetectCount"]!=null?item["DetectCount"]:"/") + "</td>"
+            services += "<td>" + (item["ReportCount"]!=null?item["ReportCount"]:item["ReportTimes"]) + "</td>"
+            services += "<td>" + (item["LastSeen"]!=null?item["LastSeen"]:item['LocalLastSeen']) + "</td>"
+            services += "<td>" + (item["RttDuration"]!=null?item["RttDuration"]:"/") + "</td>"
+            services += "<td>" + (item["RttOutboundTimestamp"]!=null?item["RttOutboundTimestamp"]:item["ServerDateTime"]) + "</td>"
+            services += "<td>" + (item["OtherData"]!=null?item["OtherData"]:"/") + "</td>"
+            services += "</tr>"
+        })
+        services += "</table>"
+        $("#services").html(services)
+    })
+</script>
+
+</body>
+</html>
