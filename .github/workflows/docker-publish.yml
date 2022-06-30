@@ -1,4 +1,4 @@
-name: Docker Publish
+name: Docker Image Publish
 # Failure is ok when building and publishing tags.
 
 # This workflow uses actions that are not certified by GitHub.
