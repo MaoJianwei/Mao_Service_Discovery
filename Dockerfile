@@ -3,7 +3,7 @@ MAINTAINER Jianwei Mao <maojianwei2012@126.com>
 
 WORKDIR /
 
-COPY "*" "/"
+COPY "./" "/"
 RUN /statically_linked_compilation.sh
 
 FROM scratch as product
