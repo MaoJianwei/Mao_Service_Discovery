@@ -16,4 +16,4 @@ COPY --from=builder "/MaoServerDiscovery" "/"
 
 EXPOSE 28888 29999
 
-CMD ["/MaoServerDiscovery", "server", "--report_server_addr", "::"]
+CMD ["/MaoServerDiscovery", "server"]
