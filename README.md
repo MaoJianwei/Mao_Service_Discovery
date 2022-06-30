@@ -4,7 +4,8 @@
 Discover your service by two methods:
 
 1. Client-Server mode, using gRPC stream.
-2. Using etcd.
+2. Server-only mode, using ICMP.
+3. Using etcd.
 
 ### Product: Client-Server mode, using gRPC stream.
 #### 1. REST API (JSON format)
