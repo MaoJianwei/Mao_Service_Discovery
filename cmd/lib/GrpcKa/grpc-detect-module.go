@@ -96,6 +96,13 @@ func (g *GrpcDetectModule) controlLoop() {
 	for {
 		select {
 		case serverNode := <-g.mergeChannel:
+			value, ok := g.serverInfo.Load(serverNode.Hostname)
+			if ok && value != nil {
+				server := value.(*MaoApi.GrpcServiceNode)
+				if !server.Alive && serverNode.Alive {
+					// TODO: send UP notification
+				}
+			}
 			g.serverInfo.Store(serverNode.Hostname, serverNode)
 		case <-checkTimer.C:
 			// aliveness checking
@@ -104,7 +111,7 @@ func (g *GrpcDetectModule) controlLoop() {
 				if service.Alive && time.Since(service.LocalLastSeen) > time.Duration(g.leaveTimeout) * time.Millisecond {
 					service.Alive = false
 					g.mergeChannel <- service
-					// TODO: send notification
+					// TODO: send DOWN notification
 				}
 				return true
 			})

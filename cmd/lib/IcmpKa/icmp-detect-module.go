@@ -166,6 +166,11 @@ func (m *IcmpDetectModule) receiveProcessIcmpLoop(protoNum int, conn *icmp.Packe
 		value, ok := m.serviceStore.Load(addrStr)
 		if ok && value != nil {
 			service := value.(*MaoApi.MaoIcmpService)
+
+			if !service.Alive {
+				// TODO: send UP notification
+			}
+
 			service.Alive = true
 			service.LastSeen = lastseen
 			service.RttDuration = service.LastSeen.Sub(service.RttOutboundTimestamp).Nanoseconds()
@@ -202,6 +207,7 @@ func (m *IcmpDetectModule) controlLoop() {
 				service := value.(*MaoApi.MaoIcmpService)
 				if service.Alive && time.Since(service.LastSeen) > time.Duration(m.leaveTimeout) * time.Millisecond {
 					service.Alive = false
+					// TODO: send DOWN notification
 				}
 				return true
 			})
@@ -213,7 +219,7 @@ func (m *IcmpDetectModule) controlLoop() {
 func (m *IcmpDetectModule) refreshShowingService() {
 	for {
 		time.Sleep(time.Duration(m.refreshShowingInterval) * time.Millisecond)
-		servicesTmp := []*MaoApi.MaoIcmpService{}
+		servicesTmp := make([]*MaoApi.MaoIcmpService, 0)
 		m.serviceStore.Range(func(_, value interface{}) bool {
 			servicesTmp = append(servicesTmp, value.(*MaoApi.MaoIcmpService))
 			return true
@@ -389,7 +395,7 @@ func (m *IcmpDetectModule) InitIcmpModule() bool {
 
 	// tunable configurable parameter
 	m.receiveFreezePeriod = 10
-	m.serviceMirror = []*MaoApi.MaoIcmpService{}
+	m.serviceMirror = make([]*MaoApi.MaoIcmpService, 0)
 
 
 	go m.receiveProcessIcmpLoop(PROTO_ICMP, m.connV4)
