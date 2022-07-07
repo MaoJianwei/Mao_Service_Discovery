@@ -19,6 +19,8 @@ const (
 	URL_EMAIL_SHOW   = "/getEmailInfo"
 
 	EMAIL_INFO_CONFIG_PATH = "/email"
+
+	SUBJECT_FIX_PREFIX = "MaoReport: "
 )
 
 type SmtpEmailModule struct {
@@ -73,9 +75,9 @@ func (s *SmtpEmailModule) sendEmail(m *MaoApi.EmailMessage) {
 	// TODO: how to build multiple receivers string?
 	// TODO: support multiple receivers
 	msg := fmt.Sprintf("To: %s\r\n" +
-		"Subject: %s\r\n" + "\r\n" +
+		"Subject: %s%s\r\n" + "\r\n" +
 		"%s\r\n",
-		s.receiver[0], m.Subject, m.Content)
+		s.receiver[0], SUBJECT_FIX_PREFIX, m.Subject, m.Content)
 
 	//msg := []byte("To: @.com\r\n" +
 	//	"Subject: MaoReport: beijing tower\r\n" +
