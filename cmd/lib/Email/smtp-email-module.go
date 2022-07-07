@@ -45,6 +45,9 @@ func (s *SmtpEmailModule) RequireShutdown() {
 }
 
 
+func (s *SmtpEmailModule) SendEmail(message *MaoApi.EmailMessage) {
+	s.sendEmailChannel <- message
+}
 
 func (s *SmtpEmailModule) checkEmailInfo() bool {
 
