@@ -23,7 +23,7 @@ func (a *authLOGIN) Start(server *smtp.ServerInfo) (string, []byte, error) {
 func (a *authLOGIN) Next(fromServer []byte, more bool) ([]byte, error) {
 	if more {
 		switch string(fromServer) {
-		case "Username:":
+		case "Username:", "username:":
 			return []byte(a.username), nil
 		case "Password:":
 			return []byte(a.password), nil
