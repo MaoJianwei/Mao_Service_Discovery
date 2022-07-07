@@ -9,15 +9,16 @@ import (
 type MaoLogLevel uint8
 
 const (
-	DEBUG MaoLogLevel = 0
-	INFO  MaoLogLevel = 1
-	WARN  MaoLogLevel = 2
-	ERROR MaoLogLevel = 3
-	SILENT MaoLogLevel = 4
+	DEBUG MaoLogLevel = iota
+	HOT_DEBUG
+	INFO
+	WARN
+	ERROR
+	SILENT
 )
 
 var (
-	MaoLogLevelString = [6]string{"DEBUG", "INFO ", "WARN ", "ERROR", "SILENT"}
+	MaoLogLevelString = [6]string{"DEBUG", "HOT_DEBUG", "INFO ", "WARN ", "ERROR", "SILENT"}
 	minShowingLevel   = INFO // default is INFO
 )
 
