@@ -2,8 +2,10 @@ package GrpcKa
 
 import (
 	MaoApi "MaoServerDiscovery/cmd/api"
+	"MaoServerDiscovery/cmd/lib/MaoCommon"
 	pb "MaoServerDiscovery/grpc.maojianwei.com/server/discovery/api"
 	"MaoServerDiscovery/util"
+	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
@@ -100,7 +102,16 @@ func (g *GrpcDetectModule) controlLoop() {
 			if ok && value != nil {
 				server := value.(*MaoApi.GrpcServiceNode)
 				if !server.Alive && serverNode.Alive {
-					// TODO: send UP notification
+					emailModule := MaoCommon.ServiceRegistryGetEmailModule()
+					if emailModule == nil {
+						util.MaoLogM(util.WARN, MODULE_NAME, "Fail to get EmailModule, can't send UP notification")
+					} else {
+						emailModule.SendEmail(&MaoApi.EmailMessage{
+							Subject: "Grpc UP notification",
+							Content: fmt.Sprintf("Service: %s\r\nUp Time: %s\r\nDetail: %v\r\n",
+								serverNode.Hostname, time.Now().String(), serverNode),
+						})
+					}
 				}
 			}
 			g.serverInfo.Store(serverNode.Hostname, serverNode)
@@ -111,7 +122,17 @@ func (g *GrpcDetectModule) controlLoop() {
 				if service.Alive && time.Since(service.LocalLastSeen) > time.Duration(g.leaveTimeout) * time.Millisecond {
 					service.Alive = false
 					g.mergeChannel <- service
-					// TODO: send DOWN notification
+
+					emailModule := MaoCommon.ServiceRegistryGetEmailModule()
+					if emailModule == nil {
+						util.MaoLogM(util.WARN, MODULE_NAME, "Fail to get EmailModule, can't send DOWN notification")
+					} else {
+						emailModule.SendEmail(&MaoApi.EmailMessage{
+							Subject: "Grpc DOWN notification",
+							Content: fmt.Sprintf("Service: %s\r\nDOWN Time: %s\r\nDetail: %v\r\n",
+								service.Hostname, time.Now().String(), service),
+						})
+					}
 				}
 				return true
 			})

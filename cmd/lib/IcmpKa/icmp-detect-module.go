@@ -5,6 +5,7 @@ import (
 	"MaoServerDiscovery/cmd/lib/Config"
 	"MaoServerDiscovery/cmd/lib/MaoCommon"
 	"MaoServerDiscovery/util"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"
@@ -166,15 +167,24 @@ func (m *IcmpDetectModule) receiveProcessIcmpLoop(protoNum int, conn *icmp.Packe
 		value, ok := m.serviceStore.Load(addrStr)
 		if ok && value != nil {
 			service := value.(*MaoApi.MaoIcmpService)
-
-			if !service.Alive {
-				// TODO: send UP notification
-			}
-
-			service.Alive = true
 			service.LastSeen = lastseen
 			service.RttDuration = service.LastSeen.Sub(service.RttOutboundTimestamp).Nanoseconds()
 			service.ReportCount++
+
+			if !service.Alive {
+				service.Alive = true
+
+				emailModule := MaoCommon.ServiceRegistryGetEmailModule()
+				if emailModule == nil {
+					util.MaoLogM(util.WARN, MODULE_NAME, "Fail to get EmailModule, can't send UP notification")
+				} else {
+					emailModule.SendEmail(&MaoApi.EmailMessage{
+						Subject: "ICMP UP notification",
+						Content: fmt.Sprintf("Service: %s\r\nUP Time: %s\r\nDetail: %v\r\n",
+							service.Address, time.Now().String(), service),
+					})
+				}
+			}
 		}
 	}
 }
@@ -207,7 +217,17 @@ func (m *IcmpDetectModule) controlLoop() {
 				service := value.(*MaoApi.MaoIcmpService)
 				if service.Alive && time.Since(service.LastSeen) > time.Duration(m.leaveTimeout) * time.Millisecond {
 					service.Alive = false
-					// TODO: send DOWN notification
+
+					emailModule := MaoCommon.ServiceRegistryGetEmailModule()
+					if emailModule == nil {
+						util.MaoLogM(util.WARN, MODULE_NAME, "Fail to get EmailModule, can't send DOWN notification")
+					} else {
+						emailModule.SendEmail(&MaoApi.EmailMessage{
+							Subject: "ICMP DOWN notification",
+							Content: fmt.Sprintf("Service: %s\r\nDOWN Time: %s\r\nDetail: %v\r\n",
+								service.Address, time.Now().String(), service),
+						})
+					}
 				}
 				return true
 			})
