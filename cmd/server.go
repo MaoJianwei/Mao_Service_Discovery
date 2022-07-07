@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"net"
-	"sort"
 	"time"
 )
 
@@ -21,9 +20,13 @@ const (
 	s_MODULE_NAME = "General-Server"
 )
 
-var (
-	serviceAlive []*MaoApi.GrpcServiceNode
-)
+//var (
+	// serviceAlive []*MaoApi.GrpcServiceNode // Mao: Deprecated, 2022.07.08.
+//)
+
+/**
+Mao: Deprecated, 2022.07.08.
+Using grpcModule.GetServiceInfo() and check service.Alive instead.
 
 func updateServerAlive(refresh_interval uint32) {
 	for {
@@ -50,12 +53,32 @@ func updateServerAlive(refresh_interval uint32) {
 		serviceAlive = serviceAliveTmp
 	}
 }
+*/
 
+
+func getGrpcAliveService() []*MaoApi.GrpcServiceNode {
+	serviceAliveTmp := make([]*MaoApi.GrpcServiceNode, 0)
+
+	grpcModule := MaoCommon.ServiceRegistryGetGrpcKaModule()
+	if grpcModule == nil {
+		util.MaoLogM(util.WARN, s_MODULE_NAME, "Fail to get GrpcKaModule")
+		return serviceAliveTmp
+	}
+
+	serviceInfo := grpcModule.GetServiceInfo()
+	for _, s := range serviceInfo {
+		if s.Alive {
+			serviceAliveTmp = append(serviceAliveTmp, s)
+		}
+	}
+
+	return serviceAliveTmp
+}
 
 func startCliOutput(dump_interval uint32) {
 	count := 1
 	for {
-		services := serviceAlive
+		services := getGrpcAliveService()
 
 		dump := ""
 		for _, s := range services {
@@ -68,6 +91,9 @@ func startCliOutput(dump_interval uint32) {
 	}
 }
 
+/**
+Mao: Deprecated, 2022.07.08.
+Deprecated "/json" and "/plain", use "/" and "/showMergeServiceIP" instead.
 
 func showServers(c *gin.Context) {
 	serverTmp := serviceAlive
@@ -84,6 +110,8 @@ func showServerPlain(c *gin.Context) {
 	c.Header("Content-Type", "text/html; charset=utf-8")
 	c.String(200, dump)
 }
+ */
+
 func showMergeServer(c *gin.Context) {
 	c.HTML(200, "index-server.html", nil)
 }
@@ -100,9 +128,13 @@ func showMergeServiceIP(c *gin.Context) {
 		ret = append(ret, s)
 	}
 
-	for _, s := range serviceAlive {
+	// TODO: because we haven't provided a method to remove dead/alive Grpc services yet,
+	// so let us just show alive services to WebUI now.
+	serviceAliveTmp := getGrpcAliveService()
+	for _, s := range serviceAliveTmp {
 		ret = append(ret, s)
 	}
+
 	c.JSON(200, ret)
 }
 
@@ -121,8 +153,8 @@ func RunServer(
 	MaoCommon.RegisterService(MaoApi.RestfulServerRegisterName, restfulServer)
 
 	// register server.go's api
-	restfulServer.RegisterGetApi("/json", showServers)
-	restfulServer.RegisterGetApi("/plain", showServerPlain)
+	//restfulServer.RegisterGetApi("/json", showServers) // Mao: Deprecated, 2022.07.08.
+	//restfulServer.RegisterGetApi("/plain", showServerPlain) // Mao: Deprecated, 2022.07.08.
 	restfulServer.RegisterGetApi("/showMergeServiceIP", showMergeServiceIP)
 	restfulServer.RegisterGetApi("/", showMergeServer)
 	// ==============================================
@@ -176,5 +208,8 @@ func RunServer(
 		go startCliOutput(dump_interval)
 	}
 
-	updateServerAlive(refresh_interval)
+	// updateServerAlive(refresh_interval) // Mao: Deprecated, 2022.07.08.
+	for {
+		time.Sleep(1 * time.Minute)
+	}
 }

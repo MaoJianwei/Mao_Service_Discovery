@@ -16,7 +16,7 @@ func TestIcmpDetectModule_InitIcmpModule(t *testing.T) {
 		icmpDetectModule.leaveTimeout == 0 ||
 		icmpDetectModule.refreshShowingInterval == 0 ||
 		icmpDetectModule.receiveFreezePeriod == 0 ||
-		icmpDetectModule.configService == nil {
+		icmpDetectModule.serviceMirror == nil {
 
 		//t.Fatalf("Icmp-KA-Module is not fully initiated.")
 	}

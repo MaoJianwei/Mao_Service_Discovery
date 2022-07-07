@@ -19,7 +19,7 @@ import (
 var (
 	//addServiceChan *chan string
 	//delServiceChan *chan string
-	//configService  []*MaoIcmpService
+	//serviceMirror  []*MaoIcmpService
 )
 
 const (
@@ -58,8 +58,8 @@ type IcmpDetectModule struct {
 	// tunable configurable parameter
 	receiveFreezePeriod uint32 // milliseconds - mitigate attack with malformed packets.
 
-	// only for web showing
-	configService  []*MaoApi.MaoIcmpService
+	// only for web showing, i.e. external get operation
+	serviceMirror []*MaoApi.MaoIcmpService
 }
 
 func (m *IcmpDetectModule) sendIcmpLoop() {
@@ -213,14 +213,17 @@ func (m *IcmpDetectModule) controlLoop() {
 func (m *IcmpDetectModule) refreshShowingService() {
 	for {
 		time.Sleep(time.Duration(m.refreshShowingInterval) * time.Millisecond)
-		newConfigService := []*MaoApi.MaoIcmpService{}
+		servicesTmp := []*MaoApi.MaoIcmpService{}
 		m.serviceStore.Range(func(_, value interface{}) bool {
-			newConfigService = append(newConfigService, value.(*MaoApi.MaoIcmpService))
+			servicesTmp = append(servicesTmp, value.(*MaoApi.MaoIcmpService))
 			return true
 		})
-		m.configService = newConfigService
+		m.serviceMirror = servicesTmp
 	}
 }
+
+
+
 
 func (m *IcmpDetectModule) getServiceConfig() (serviceList []string){
 	serviceList = make([]string, 0)
@@ -308,24 +311,6 @@ func (m *IcmpDetectModule) removeOldServiceFromConfig(serviceAddr string) (succe
 	return false
 }
 
-
-
-
-
-
-func (m *IcmpDetectModule) AddService(serviceIPv4v6 string) {
-	if net.ParseIP(serviceIPv4v6) != nil {
-		m.AddChan <- serviceIPv4v6
-	}
-}
-
-func (m *IcmpDetectModule) DelService(serviceIPv4v6 string) {
-	if net.ParseIP(serviceIPv4v6) != nil {
-		m.DelChan <- serviceIPv4v6
-	}
-}
-
-
 func (m *IcmpDetectModule) initConfigPath() (success bool, serviceConfig []string) {
 	services := m.getServiceConfig()
 	if services != nil {
@@ -348,6 +333,23 @@ func (m *IcmpDetectModule) initConfigPath() (success bool, serviceConfig []strin
 
 	return true, services
 }
+
+
+
+
+func (m *IcmpDetectModule) AddService(serviceIPv4v6 string) {
+	if net.ParseIP(serviceIPv4v6) != nil {
+		m.AddChan <- serviceIPv4v6
+	}
+}
+
+func (m *IcmpDetectModule) DelService(serviceIPv4v6 string) {
+	if net.ParseIP(serviceIPv4v6) != nil {
+		m.DelChan <- serviceIPv4v6
+	}
+}
+
+
 
 func (m *IcmpDetectModule) InitIcmpModule() bool {
 	var err error
@@ -387,7 +389,7 @@ func (m *IcmpDetectModule) InitIcmpModule() bool {
 
 	// tunable configurable parameter
 	m.receiveFreezePeriod = 10
-	m.configService = []*MaoApi.MaoIcmpService{}
+	m.serviceMirror = []*MaoApi.MaoIcmpService{}
 
 
 	go m.receiveProcessIcmpLoop(PROTO_ICMP, m.connV4)
@@ -405,7 +407,7 @@ func (m *IcmpDetectModule) InitIcmpModule() bool {
 
 
 func (m *IcmpDetectModule) GetServices() []*MaoApi.MaoIcmpService {
-	tmp := m.configService
+	tmp := m.serviceMirror
 	sort.Slice(tmp, func(i, j int) bool {
 		return tmp[i].Address < tmp[j].Address
 	})
@@ -472,6 +474,6 @@ func (m *IcmpDetectModule) configRestControlInterface() {
 //			newConfigService = append(newConfigService, value.(*MaoIcmpService))
 //			return true
 //		})
-//		configService = newConfigService
+//		serviceMirror = newConfigService
 //	}
 //}

@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 	"net"
+	"sort"
 	"sync"
 	"time"
 )
@@ -22,6 +23,13 @@ type GrpcDetectModule struct {
 
 	server *grpc.Server
 	pb.UnimplementedMaoServerDiscoveryServer
+
+	checkInterval uint32 // milliseconds
+	leaveTimeout uint32 // milliseconds
+	refreshShowingInterval uint32 // milliseconds
+
+	// only for web showing, i.e. external get operation
+	serverInfoMirror  []*MaoApi.GrpcServiceNode
 }
 
 // implement pb.UnimplementedMaoServerDiscoveryServer
@@ -65,6 +73,7 @@ func (g *GrpcDetectModule) dealRecv(reportStream pb.MaoServerDiscovery_ReportSer
 				OtherData:		report.GetAuxData(),
 				RealClientAddr: clientAddr,
 				LocalLastSeen:  time.Now(),
+				Alive:          true,
 			}
 		}
 		count++
@@ -80,24 +89,62 @@ func (g *GrpcDetectModule) runGrpcServer(listener net.Listener) {
 }
 
 
-func (g *GrpcDetectModule) mergeAliveServer() {
-	for serverNode := range g.mergeChannel {
-		g.serverInfo.Store(serverNode.Hostname, serverNode)
+
+
+func (g *GrpcDetectModule) controlLoop() {
+	checkTimer := time.NewTimer(time.Duration(g.checkInterval) * time.Millisecond)
+	for {
+		select {
+		case serverNode := <-g.mergeChannel:
+			g.serverInfo.Store(serverNode.Hostname, serverNode)
+		case <-checkTimer.C:
+			// aliveness checking
+			g.serverInfo.Range(func(key, value interface{}) bool {
+				service := value.(*MaoApi.GrpcServiceNode)
+				if service.Alive && time.Since(service.LocalLastSeen) > time.Duration(g.leaveTimeout) * time.Millisecond {
+					service.Alive = false
+					g.mergeChannel <- service
+					// TODO: send notification
+				}
+				return true
+			})
+			checkTimer.Reset(time.Duration(g.checkInterval) * time.Millisecond)
+		}
 	}
 }
 
 
+
+func (g *GrpcDetectModule) refreshShowingService() {
+	for {
+		time.Sleep(time.Duration(g.refreshShowingInterval) * time.Millisecond)
+		serversTmp := make([]*MaoApi.GrpcServiceNode, 0)
+		g.serverInfo.Range(func(_, value interface{}) bool {
+			serversTmp = append(serversTmp, value.(*MaoApi.GrpcServiceNode))
+			return true
+		})
+		g.serverInfoMirror = serversTmp
+	}
+}
+
 func (g *GrpcDetectModule) GetServiceInfo() []*MaoApi.GrpcServiceNode {
-	servers := make([]*MaoApi.GrpcServiceNode, 0)
-	g.serverInfo.Range(func(key, value interface{}) bool {
-		servers = append(servers, value.(*MaoApi.GrpcServiceNode))
-		return true
+	servers := g.serverInfoMirror
+	sort.Slice(servers, func(i, j int) bool {
+		return servers[i].Hostname < servers[j].Hostname
 	})
 	return servers
 }
 
+
+
 func (g *GrpcDetectModule) InitGrpcModule(addrPort string) bool {
 	g.mergeChannel = make(chan *MaoApi.GrpcServiceNode, 1024)
+
+	g.checkInterval = 500
+	g.leaveTimeout = 5000
+	g.refreshShowingInterval = 1000
+	g.serverInfoMirror = make([]*MaoApi.GrpcServiceNode, 0)
+
 
 	listener, err := net.Listen("tcp", addrPort)
 	if err != nil {
@@ -109,7 +156,9 @@ func (g *GrpcDetectModule) InitGrpcModule(addrPort string) bool {
 	pb.RegisterMaoServerDiscoveryServer(g.server, g)
 	go g.runGrpcServer(listener)
 
-	go g.mergeAliveServer()
+
+	go g.controlLoop()
+	go g.refreshShowingService()
 
 	return true
 }

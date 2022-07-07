@@ -19,6 +19,7 @@ type GrpcServiceNode struct {
 
 	ServerDateTime string
 	LocalLastSeen  time.Time
+	Alive bool
 }
 
 type GrpcKaModule interface {
