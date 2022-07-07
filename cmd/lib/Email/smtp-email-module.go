@@ -108,7 +108,9 @@ func (s *SmtpEmailModule) sendEmailLoop() {
 				for !sent {
 					select {
 					case <-freezeTimer.C:
+						util.MaoLogM(util.INFO, MODULE_NAME, "Sending email, pending: %d", len(s.sendEmailChannel))
 						s.sendEmail(message)
+						s.lastSendTimestamp = time.Now()
 						sent = true
 					case <-checkShutdownTimer.C:
 						util.MaoLogM(util.HOT_DEBUG, MODULE_NAME, "CheckShutdown while freezing, event queue len %d", len(s.sendEmailChannel))
@@ -120,7 +122,9 @@ func (s *SmtpEmailModule) sendEmailLoop() {
 					}
 				}
 			} else {
+				util.MaoLogM(util.INFO, MODULE_NAME, "Sending email, pending: %d", len(s.sendEmailChannel))
 				s.sendEmail(message)
+				s.lastSendTimestamp = time.Now()
 			}
 		case <-checkShutdownTimer.C:
 			util.MaoLogM(util.HOT_DEBUG, MODULE_NAME, "CheckShutdown, event queue len %d", len(s.sendEmailChannel))
@@ -137,7 +141,7 @@ func (s *SmtpEmailModule) sendEmailLoop() {
 }
 
 func (s *SmtpEmailModule) InitSmtpEmailModule() bool {
-	s.sendEmailChannel = make(chan *MaoApi.EmailMessage, 16)
+	s.sendEmailChannel = make(chan *MaoApi.EmailMessage, 1024)
 	s.needShutdown = false
 
 	go s.sendEmailLoop()
