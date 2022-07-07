@@ -51,8 +51,6 @@ func (s *SmtpEmailModule) SendEmail(message *MaoApi.EmailMessage) {
 
 func (s *SmtpEmailModule) checkEmailInfo() bool {
 
-	// TODO: wait test
-
 	// password may be empty?
 	if s.username == "" || s.smtpServerAddrPort == "" || s.sender == "" || len(s.receiver) == 0 {
 		// can adapt to "s.receiver == nil"
@@ -62,8 +60,6 @@ func (s *SmtpEmailModule) checkEmailInfo() bool {
 }
 
 func (s *SmtpEmailModule) sendEmail(m *MaoApi.EmailMessage) {
-
-	// TODO: wait test
 
 	if !s.checkEmailInfo() {
 		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to send email, please config email info first.")
@@ -100,8 +96,6 @@ func (s *SmtpEmailModule) sendEmailLoop() {
 	for {
 		select {
 		case message := <-s.sendEmailChannel:
-			// TODO: wait test
-
 			if time.Now().Sub(s.lastSendTimestamp) < 10 * time.Second {
 				freezeTimer := time.NewTimer(time.Duration(10) * time.Second)
 				sent := false
