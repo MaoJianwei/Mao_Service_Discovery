@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<!--enctype="application/json"-->
+<form action="/addEmailInfo" method="post">
+    Username :<br/>
+    <textarea rows="1" cols="50" name="username" id="username"></textarea><br/>
+    Password :<br/>
+    <textarea rows="1" cols="50" name="password" id="password"></textarea><br/>
+    SMTP Server address and port (e.g. smtp.mao.com:25) :<br/>
+    <textarea rows="1" cols="50" name="smtpServerAddrPort" id="smtpServerAddrPort"></textarea><br/>
+    Sender Email :<br/>
+    <textarea rows="1" cols="50" name="sender" id="sender"></textarea><br/>
+    Receiver Emails (one line, one receiver) :<br/>
+    <textarea rows="10" cols="50" name="receiver" id="receiver"></textarea><br/>
+    <input type="submit" value="Add" />
+</form>
+<br/>
+<br/>
+<!--Current email info:-->
+<!--<div id="EmailInfoDiv"></div>-->
+<script src="/static/jquery-3.6.0.min.js" type="text/javascript"></script>
+<script>
+    $.get("/getEmailInfo",function (response, status, xhr) {
+
+        // emailInfo = "<table border=\"1\">"
+        // emailInfo += "<tr><td>" + "Username" + "</td>"
+        // emailInfo += "<td>" + "<input type='text' name='usernameShow' style='width:280px' readonly value='" + (response['username']!=null?response['username']:"N/A") + "'/>" + "</td></tr>"
+        // emailInfo += "<tr><td>" + "Password" + "</td>"
+        // emailInfo += "<td>" + "<input type='text' name='passwordShow' style='width:280px' readonly value='" + " --- --- " + "'/>" + "</td></tr>"
+        // emailInfo += "<tr><td>" + "SMTP Server" + "</td>"
+        // emailInfo += "<td>" + "<input type='text' name='smtpServerAddrPortShow' style='width:280px' readonly value='" + (response['smtpServerAddrPort']!=null?response['smtpServerAddrPort']:"N/A") + "'/>" + "</td></tr>"
+        // emailInfo += "<tr><td>" + "Sender Email" + "</td>"
+        // emailInfo += "<td>" + "<input type='text' name='senderShow' style='width:280px' readonly value='" + (response['sender']!=null?response['sender']:"N/A") + "'/>" + "</td></tr>"
+        // emailInfo += "<tr><td>" + "Receiver Emails" + "</td>"
+        //
+        // receivers = ""
+        // if (response['receiver'] != null) {
+        //     response['receiver'].forEach( r => {
+        //         receivers += r + "\r\n"
+        //     })
+        // }
+        // emailInfo += "<td>" + "<textarea rows='10' cols='38' name='receiverShow'>" + receivers + "</textarea>" + "</td></tr>"
+        // emailInfo += "</table>"
+        // $("#EmailInfoDiv").html(emailInfo)
+
+
+        receivers = ""
+        if (response['receiver'] != null) {
+            response['receiver'].forEach( r => {
+                receivers += r + "\r\n"
+            })
+        }
+        $("#username").text(response['username']!=null?response['username']:"N/A")
+        $("#password").text(" --- --- ")
+        $("#smtpServerAddrPort").text(response['smtpServerAddrPort']!=null?response['smtpServerAddrPort']:"N/A")
+        $("#sender").text(response['sender']!=null?response['sender']:"N/A")
+        $("#receiver").text(receivers)
+    })
+</script>
+
+</body>
+</html>

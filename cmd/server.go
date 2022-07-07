@@ -3,6 +3,7 @@ package branch
 import (
 	"MaoServerDiscovery/cmd/api"
 	config "MaoServerDiscovery/cmd/lib/Config"
+	"MaoServerDiscovery/cmd/lib/Email"
 	"MaoServerDiscovery/cmd/lib/GrpcKa"
 	icmpKa "MaoServerDiscovery/cmd/lib/IcmpKa"
 	"MaoServerDiscovery/cmd/lib/MaoCommon"
@@ -152,6 +153,16 @@ func RunServer(
 	}
 
 	MaoCommon.RegisterService(MaoApi.IcmpKaModuleRegisterName, icmpDetectModule)
+	// ============================
+
+
+	// ====== SMTP Email module ======
+	smtpEmailModule := &Email.SmtpEmailModule{}
+	if !smtpEmailModule.InitSmtpEmailModule() {
+		return
+	}
+
+	MaoCommon.RegisterService(MaoApi.EmailModuleRegisterName, smtpEmailModule)
 	// ============================
 
 

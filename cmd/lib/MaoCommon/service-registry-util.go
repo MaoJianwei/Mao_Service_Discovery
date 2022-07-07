@@ -27,3 +27,9 @@ func ServiceRegistryGetRestfulServerModule() (serviceInstance MaoApi.RestfulServ
 	restfulServer, _ := GetService(MaoApi.RestfulServerRegisterName).(MaoApi.RestfulServerModule)
 	return restfulServer
 }
+
+// if fail, return nil
+func ServiceRegistryGetEmailModule() (serviceInstance MaoApi.EmailModule) {
+	emailModule, _ := GetService(MaoApi.EmailModuleRegisterName).(MaoApi.EmailModule)
+	return emailModule
+}
