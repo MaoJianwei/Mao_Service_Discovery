@@ -3,10 +3,11 @@ package Email
 import (
 	MaoApi "MaoServerDiscovery/cmd/api"
 	"MaoServerDiscovery/cmd/lib/MaoCommon"
+	"MaoServerDiscovery/cmd/lib/MaoEnhancedGolang"
 	"MaoServerDiscovery/util"
+	"crypto/tls"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"net/smtp"
 	"strings"
 	"time"
 )
@@ -61,6 +62,7 @@ func (s *SmtpEmailModule) checkEmailInfo() bool {
 	return true
 }
 
+
 func (s *SmtpEmailModule) sendEmail(m *MaoApi.EmailMessage) {
 
 	if !s.checkEmailInfo() {
@@ -84,9 +86,14 @@ func (s *SmtpEmailModule) sendEmail(m *MaoApi.EmailMessage) {
 	//	"\r\n" +
 	//	"This is the email body.\r\n")
 
+	// TODO: make it configurable
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: true,
+	}
+
 	// Connect to the server, authenticate, set the sender and recipient,
 	// and send the email all in one step.
-	err := smtp.SendMail(s.smtpServerAddrPort, auth, s.sender, s.receiver, []byte(msg))
+	err := MaoEnhancedGolang.SendMail(s.smtpServerAddrPort, auth, s.sender, s.receiver, []byte(msg), tlsConfig)
 	if err != nil {
 		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to send email, %s", err.Error())
 	}
