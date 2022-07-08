@@ -24,7 +24,8 @@ import (
 "fmt"
 "io"
 "net"
-"net/textproto"
+	"net/smtp"
+	"net/textproto"
 "strings"
 )
 
@@ -194,12 +195,12 @@ func (c *Client) Verify(addr string) error {
 // Auth authenticates a client using the provided authentication mechanism.
 // A failed authentication closes the connection.
 // Only servers that advertise the AUTH extension support this function.
-func (c *Client) Auth(a Auth) error {
+func (c *Client) Auth(a smtp.Auth) error {
 	if err := c.hello(); err != nil {
 		return err
 	}
 	encoding := base64.StdEncoding
-	mech, resp, err := a.Start(&ServerInfo{c.serverName, c.tls, c.auth})
+	mech, resp, err := a.Start(&smtp.ServerInfo{c.serverName, c.tls, c.auth})
 	if err != nil {
 		c.Quit()
 		return err
@@ -318,7 +319,7 @@ var testHookStartTLS func(*tls.Config) // nil, except for tests
 // attachments (see the mime/multipart package), or other mail
 // functionality. Higher-level packages exist outside of the standard
 // library.
-func SendMail(addr string, a Auth, from string, to []string, msg []byte) error {
+func SendMail(addr string, a smtp.Auth, from string, to []string, msg []byte, tlsConfig *tls.Config) error {
 	if err := validateLine(from); err != nil {
 		return err
 	}
@@ -336,7 +337,12 @@ func SendMail(addr string, a Auth, from string, to []string, msg []byte) error {
 		return err
 	}
 	if ok, _ := c.Extension("STARTTLS"); ok {
-		config := &tls.Config{ServerName: c.serverName}
+		config := tlsConfig
+		if config == nil {
+			config = &tls.Config{ServerName: c.serverName}
+		} else {
+			config.ServerName = c.serverName
+		}
 		if testHookStartTLS != nil {
 			testHookStartTLS(config)
 		}
