@@ -198,6 +198,16 @@ func RunServer(
 	// ============================
 
 
+	// ====== Wechat Message module ======
+	//wechatMessageModule := &Wechat.WechatMessageModule{}
+	//if !wechatMessageModule.InitWechatMessageModule() {
+	//	return
+	//}
+	//
+	//MaoCommon.RegisterService(MaoApi.WechatModuleRegisterName, wechatMessageModule)
+	// ============================
+
+
 	// ====== Restful Server module - part 2/2 ======
 	restfulServer.StartRestfulServerDaemon(parent.GetAddrPort(web_server_addr, web_server_port))
 	// ==============================================

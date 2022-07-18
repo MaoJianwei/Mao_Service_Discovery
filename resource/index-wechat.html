@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<!--enctype="application/json"-->
+<form action="/addWechatInfo" method="post">
+    CorpId :<br/>
+    <textarea rows="1" cols="50" name="corpId" id="corpId"></textarea><br/>
+    AgentId :<br/>
+    <textarea rows="1" cols="50" name="agentId" id="agentId"></textarea><br/>
+    AgentSecret :<br/>
+    <textarea rows="1" cols="50" name="agentSecret" id="agentSecret"></textarea><br/>
+    Global Receivers (one line, one receiver) :<br/>
+    <textarea rows="10" cols="50" name="globalReceivers" id="globalReceivers"></textarea><br/>
+    <input type="submit" value="Add" />
+</form>
+<br/>
+<br/>
+<!--Current email info:-->
+<!--<div id="EmailInfoDiv"></div>-->
+<script src="/static/jquery-3.6.0.min.js" type="text/javascript"></script>
+<script>
+    $.get("/getWechatInfo",function (response, status, xhr) {
+
+        // emailInfo = "<table border=\"1\">"
+        // emailInfo += "<tr><td>" + "Username" + "</td>"
+        // emailInfo += "<td>" + "<input type='text' name='usernameShow' style='width:280px' readonly value='" + (response['username']!=null?response['username']:"N/A") + "'/>" + "</td></tr>"
+        // emailInfo += "<tr><td>" + "Password" + "</td>"
+        // emailInfo += "<td>" + "<input type='text' name='passwordShow' style='width:280px' readonly value='" + " --- --- " + "'/>" + "</td></tr>"
+        // emailInfo += "<tr><td>" + "SMTP Server" + "</td>"
+        // emailInfo += "<td>" + "<input type='text' name='smtpServerAddrPortShow' style='width:280px' readonly value='" + (response['smtpServerAddrPort']!=null?response['smtpServerAddrPort']:"N/A") + "'/>" + "</td></tr>"
+        // emailInfo += "<tr><td>" + "Sender Email" + "</td>"
+        // emailInfo += "<td>" + "<input type='text' name='senderShow' style='width:280px' readonly value='" + (response['sender']!=null?response['sender']:"N/A") + "'/>" + "</td></tr>"
+        // emailInfo += "<tr><td>" + "Receiver Emails" + "</td>"
+        //
+        // receivers = ""
+        // if (response['receiver'] != null) {
+        //     response['receiver'].forEach( r => {
+        //         receivers += r + "\r\n"
+        //     })
+        // }
+        // emailInfo += "<td>" + "<textarea rows='10' cols='38' name='receiverShow'>" + receivers + "</textarea>" + "</td></tr>"
+        // emailInfo += "</table>"
+        // $("#EmailInfoDiv").html(emailInfo)
+
+
+        globalReceivers = ""
+        if (response['globalReceivers'] != null) {
+            response['globalReceivers'].forEach( r => {
+                globalReceivers += r + "\r\n"
+            })
+        }
+        $("#corpId").text(response['corpId']!=null?response['corpId']:"N/A")
+        $("#agentId").text(response['agentId']!=null?response['agentId']:"N/A")
+        $("#agentSecret").text(" --- --- ")
+        $("#globalReceivers").text(globalReceivers)
+    })
+</script>
+
+</body>
+</html>
