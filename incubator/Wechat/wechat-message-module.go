@@ -21,6 +21,10 @@ const (
 )
 
 const (
+
+	URL_TEMPLATE_GET_ACCESS_TOKEN = "https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=%s&corpsecret=%s"
+	URL_TEMPLATE_SEND_MESSAGE = "https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=%s"
+
 	TEXT_CARD_JSON_TEMPLATE =
 		"{" +
 			"\"touser\":\"%s\"," +
@@ -72,6 +76,8 @@ func (w *WechatMessageModule) checkWechatInfo() bool {
 }
 
 
+//func (w *WechatMessageModule) getAccessToken;
+
 func (w *WechatMessageModule) sendWechatMessage(m *MaoApi.WechatMessage) {
 
 	if !w.checkWechatInfo() {
@@ -97,6 +103,13 @@ func (w *WechatMessageModule) sendWechatMessage(m *MaoApi.WechatMessage) {
 
 	wechatJson := fmt.Sprintf(TEXT_CARD_JSON_TEMPLATE, receivers, w.agentId, m.Title, m.ContentHttp, m.Url)
 	util.MaoLogM(util.HOT_DEBUG, MODULE_NAME, "Prepare wechat json:\n%s", wechatJson)
+	
+
+	//http.Get(fmt.Sprintf(URL_TEMPLATE_GET_ACCESS_TOKEN, ))
+
+
+	//req := http.Post("https://qyapi.weixin.qq.com/cgi-bin/message/send", )
+	
 	return
 
 	// TODO

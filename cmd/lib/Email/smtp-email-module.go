@@ -116,7 +116,7 @@ func (s *SmtpEmailModule) sendEmailLoop() {
 						s.lastSendTimestamp = time.Now()
 						sent = true
 					case <-checkShutdownTimer.C:
-						util.MaoLogM(util.HOT_DEBUG, MODULE_NAME, "CheckShutdown while freezing, event queue len %d", len(s.sendEmailChannel))
+						util.MaoLogM(util.DEBUG, MODULE_NAME, "CheckShutdown while freezing, event queue len %d", len(s.sendEmailChannel))
 						if s.needShutdown {
 							util.MaoLogM(util.WARN, MODULE_NAME, "Exit while freezing, the sendEmailChannel len: %d", len(s.sendEmailChannel))
 							return
@@ -130,7 +130,7 @@ func (s *SmtpEmailModule) sendEmailLoop() {
 				s.lastSendTimestamp = time.Now()
 			}
 		case <-checkShutdownTimer.C:
-			util.MaoLogM(util.HOT_DEBUG, MODULE_NAME, "CheckShutdown, event queue len %d", len(s.sendEmailChannel))
+			util.MaoLogM(util.DEBUG, MODULE_NAME, "CheckShutdown, event queue len %d", len(s.sendEmailChannel))
 			if s.needShutdown {
 				if len(s.sendEmailChannel) != 0 {
 					util.MaoLogM(util.WARN, MODULE_NAME, "Exiting, but the sendEmailChannel is not empty, len: %d", len(s.sendEmailChannel))

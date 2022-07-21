@@ -184,6 +184,20 @@ func (m *IcmpDetectModule) receiveProcessIcmpLoop(protoNum int, conn *icmp.Packe
 							service.Address, time.Now().String(), service),
 					})
 				}
+
+				
+				// TEMP: test wechat module
+				//wechatModule := MaoCommon.ServiceRegistryGetWechatModule()
+				//if wechatModule == nil {
+				//	util.MaoLogM(util.WARN, MODULE_NAME, "Fail to get WechatModule, can't send UP notification")
+				//} else {
+				//	wechatModule.SendWechatMessage(&MaoApi.WechatMessage{
+				//		Title:       "ICMP UP notification",
+				//		ContentHttp: fmt.Sprintf("Service: %s\r\nUP Time: %s\r\nDetail: %v\r\n",
+				//			service.Address, time.Now().String(), service),
+				//		Url:         "https://www.maojianwei.com/",
+				//	})
+				//}
 			}
 		}
 	}
@@ -228,6 +242,20 @@ func (m *IcmpDetectModule) controlLoop() {
 								service.Address, time.Now().String(), service),
 						})
 					}
+
+
+					// TEMP: test wechat module
+					//wechatModule := MaoCommon.ServiceRegistryGetWechatModule()
+					//if wechatModule == nil {
+					//	util.MaoLogM(util.WARN, MODULE_NAME, "Fail to get WechatModule, can't send DOWN notification")
+					//} else {
+					//	wechatModule.SendWechatMessage(&MaoApi.WechatMessage{
+					//		Title:       "ICMP DOWN notification",
+					//		ContentHttp: fmt.Sprintf("Service: %s\r\nDOWN Time: %s\r\nDetail: %v\r\n",
+					//			service.Address, time.Now().String(), service),
+					//		Url:         "https://www.maojianwei.com/",
+					//	})
+					//}
 				}
 				return true
 			})
