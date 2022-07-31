@@ -3,12 +3,12 @@ package branch
 import (
 	pb "MaoServerDiscovery/grpc.maojianwei.com/server/discovery/api"
 	util "MaoServerDiscovery/util"
+	"encoding/json"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	influxdb2Api "github.com/influxdata/influxdb-client-go/v2/api"
 	"strings"
 
 	"context"
-	"fmt"
 	"google.golang.org/grpc"
 	"net"
 	"os/exec"
@@ -152,13 +152,13 @@ func RunGeneralClient(report_server_addr *net.IP, report_server_port uint32, rep
 		count := 1
 		for {
 			dataOk := true
-			hostname, _ := util.GetHostname()
+			hostname, err := util.GetHostname()
 			if err != nil {
 				hostname = "Mao-Unknown"
 				dataOk = false
 			}
 
-			ips, _ := util.GetUnicastIp()
+			ips, err := util.GetUnicastIp()
 			if err != nil {
 				ips = []string{"Mao-Fail", err.Error()}
 				dataOk = false
@@ -172,10 +172,14 @@ func RunGeneralClient(report_server_addr *net.IP, report_server_port uint32, rep
 				NowDatetime: time.Now().String(),
 				AuxData: "",
 			}
+
+			auxDataMap := make(map[string]interface{})
+
 			if nat66Gateway {
 				v6In, v6Out, err := getNat66GatewayData()
 				if err == nil {
-					report.AuxData = fmt.Sprintf("%s {\"v6In\":%d, \"v6Out\":%d}", report.AuxData, v6In, v6Out)
+					auxDataMap["v6In"] = v6In
+					auxDataMap["v6Out"] = v6Out
 					if nat66Persistent {
 						nat66UploadInfluxdb(&influxdbWriteAPI, v6In, v6Out)
 					}
@@ -183,13 +187,20 @@ func RunGeneralClient(report_server_addr *net.IP, report_server_port uint32, rep
 			}
 			if envTempMonitor {
 				env := envTemp
-				report.AuxData = fmt.Sprintf("%s {\"envTemp\":%f}", report.AuxData, env)
+				auxDataMap["envTemp"] = env
 				if envTempPersistent {
 					envTempUploadInfluxdb(&influxdbWriteAPI, env)
 				}
 			}
 
-			err := streamClient.Send(report)
+			auxDataByte, err := json.Marshal(auxDataMap)
+			if err != nil {
+				util.MaoLogM(util.WARN, c_MODULE_NAME, "Fail to marshal auxDataMap to json format, %s", err.Error())
+			} else {
+				report.AuxData = string(auxDataByte)
+			}
+
+			err = streamClient.Send(report)
 			if err != nil {
 				util.MaoLogM(util.ERROR, c_MODULE_NAME, "Fail to report, %s", err.Error())
 				break
