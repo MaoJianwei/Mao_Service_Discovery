@@ -2,6 +2,7 @@ package branch
 
 import (
 	"MaoServerDiscovery/cmd/api"
+	"MaoServerDiscovery/cmd/lib/AuxDataProcessor"
 	config "MaoServerDiscovery/cmd/lib/Config"
 	"MaoServerDiscovery/cmd/lib/Email"
 	"MaoServerDiscovery/cmd/lib/GrpcKa"
@@ -212,6 +213,16 @@ func RunServer(
 	restfulServer.StartRestfulServerDaemon(parent.GetAddrPort(web_server_addr, web_server_port))
 	// ==============================================
 
+
+	// ====== Aux Data Processor module ======
+	auxDataModule := &AuxDataProcessor.AuxDataProcessorModule{}
+	auxDataModule.InitAuxDataProcessor()
+
+	MaoCommon.RegisterService(MaoApi.AuxDataModuleRegisterName, auxDataModule)
+
+	var envTempProcessor MaoApi.AuxDataProcessor = AuxDataProcessor.EnvTempProcessor{}
+	auxDataModule.AddProcessor(&envTempProcessor)
+	// =======================================
 
 
 	if !silent {

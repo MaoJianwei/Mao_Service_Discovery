@@ -30,7 +30,8 @@ type GrpcDetectModule struct {
 	leaveTimeout uint32 // milliseconds
 	refreshShowingInterval uint32 // milliseconds
 
-	// only for web showing, i.e. external get operation
+	// used for web showing, i.e. external get operation
+	// used for processing aux data
 	serverInfoMirror  []*MaoApi.GrpcServiceNode
 }
 

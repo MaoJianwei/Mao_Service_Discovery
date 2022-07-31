@@ -39,3 +39,9 @@ func ServiceRegistryGetWechatModule() (serviceInstance MaoApi.WechatModule) {
 	wechatModule, _ := GetService(MaoApi.WechatModuleRegisterName).(MaoApi.WechatModule)
 	return wechatModule
 }
+
+// if fail, return nil
+func ServiceRegistryGetAuxDataModule() (serviceInstance MaoApi.AuxDataModule) {
+	auxDataModule, _ := GetService(MaoApi.AuxDataModuleRegisterName).(MaoApi.AuxDataModule)
+	return auxDataModule
+}
