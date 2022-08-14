@@ -7,6 +7,12 @@ import (
 )
 
 func TestGetExternalIPAddress(t *testing.T) {
+	t1 := time.Now()
+	time.Sleep(2 * time.Second)
+	t2 := time.Now()
+	s := t2.Sub(t1).Seconds()
+	log.Println(s)
+
 	for {
 		totalBytesSent, err := GetTotalBytesSent()
 		log.Printf("TotalBytesSent: %d, err: %d", totalBytesSent, err)

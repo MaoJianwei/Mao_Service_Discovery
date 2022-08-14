@@ -1,6 +1,7 @@
 package AuxDataProcessor
 
 import (
+	"MaoServerDiscovery/cmd/lib/InfluxDB"
 	"MaoServerDiscovery/util"
 	"encoding/json"
 	"time"
@@ -35,7 +36,7 @@ func (e EnvTempProcessor) Process(auxData string) {
 	}
 	util.MaoLogM(util.DEBUG, p_EnvTemp_MODULE_NAME, "Get temp %f, %s", auxDataMap.EnvTemp, time.Now().String())
 
-	EnvTempUploadInfluxdb(auxDataMap.EnvGeo, envTime, auxDataMap.EnvTemp)
+	InfluxDB.EnvTempUploadInfluxdb(auxDataMap.EnvGeo, envTime, auxDataMap.EnvTemp)
 }
 
 

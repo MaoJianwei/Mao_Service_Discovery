@@ -45,3 +45,9 @@ func ServiceRegistryGetAuxDataModule() (serviceInstance MaoApi.AuxDataModule) {
 	auxDataModule, _ := GetService(MaoApi.AuxDataModuleRegisterName).(MaoApi.AuxDataModule)
 	return auxDataModule
 }
+
+// if fail, return nil
+func ServiceRegistryGetGatewayModule() (serviceInstance MaoApi.GatewayModule) {
+	gatewayModule, _ := GetService(MaoApi.GatewayModuleRegisterName).(MaoApi.GatewayModule)
+	return gatewayModule
+}

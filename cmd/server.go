@@ -7,8 +7,10 @@ import (
 	"MaoServerDiscovery/cmd/lib/Email"
 	"MaoServerDiscovery/cmd/lib/GrpcKa"
 	icmpKa "MaoServerDiscovery/cmd/lib/IcmpKa"
+	"MaoServerDiscovery/cmd/lib/InfluxDB"
 	"MaoServerDiscovery/cmd/lib/MaoCommon"
 	"MaoServerDiscovery/cmd/lib/Restful"
+	"MaoServerDiscovery/cmd/lib/Soap"
 	"MaoServerDiscovery/util"
 	parent "MaoServerDiscovery/util"
 	"fmt"
@@ -217,7 +219,7 @@ func RunServer(
 
 
 	// ====== Aux Data Processor module ======
-	AuxDataProcessor.ConfigInfluxdbUtils(influxdbUrl, influxdbToken, influxdbOrgBucket)
+	InfluxDB.ConfigInfluxdbUtils(influxdbUrl, influxdbToken, influxdbOrgBucket)
 
 	auxDataModule := &AuxDataProcessor.AuxDataProcessorModule{}
 	auxDataModule.InitAuxDataProcessor()
@@ -229,6 +231,14 @@ func RunServer(
 	auxDataModule.AddProcessor(&envTempProcessorAux)
 	// =======================================
 
+	// ====== Gateway module ======
+	gatewayModule := &Soap.TplinkGatewayModule{}
+	if !gatewayModule.InitTplinkGatewayModule() {
+		return
+	}
+
+	MaoCommon.RegisterService(MaoApi.GatewayModuleRegisterName, gatewayModule)
+	// ============================
 
 	if !silent {
 		go startCliOutput(dump_interval)
