@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	p_EnvTemp_MODULE_NAME = "GRPC-Detect-module"
+	p_EnvTemp_MODULE_NAME = "Env-Temperature-module"
 )
 
 type EnvTempProcessor struct {
@@ -22,11 +22,15 @@ type EnvTempData struct {
 }
 
 func (e EnvTempProcessor) Process(auxData string) {
+
 	auxDataMap := EnvTempData{}
 	err := json.Unmarshal([]byte(auxData), &auxDataMap)
 	if err != nil {
 		util.MaoLogM(util.WARN, p_EnvTemp_MODULE_NAME, "Fail to json.Unmarshal aux data. %s", err.Error())
 		return
+	}
+	if auxDataMap.EnvTime == "" {
+		return // not contain Environment Temperature data
 	}
 
 	envTime, err := time.Parse(time.RFC3339Nano, auxDataMap.EnvTime)
@@ -34,7 +38,7 @@ func (e EnvTempProcessor) Process(auxData string) {
 		util.MaoLogM(util.WARN, p_EnvTemp_MODULE_NAME, "Fail to parse time string as RFC3339Nano format, %s, err: %s", auxDataMap.EnvTime, err.Error())
 		return
 	}
-	util.MaoLogM(util.DEBUG, p_EnvTemp_MODULE_NAME, "Get temp %f, %s", auxDataMap.EnvTemp, time.Now().String())
+	util.MaoLogM(util.HOT_DEBUG, p_EnvTemp_MODULE_NAME, "Get temp %f, %s", auxDataMap.EnvTemp, time.Now().String())
 
 	InfluxDB.EnvTempUploadInfluxdb(auxDataMap.EnvGeo, envTime, auxDataMap.EnvTemp)
 }
