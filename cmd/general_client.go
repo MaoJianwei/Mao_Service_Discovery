@@ -188,6 +188,8 @@ func RunGeneralClient(report_server_addr *net.IP, report_server_port uint32, rep
 			if envTempMonitor {
 				env := envTemp
 				auxDataMap["envTemp"] = env
+				auxDataMap["envGeo"] = "Beijing-HQ"
+				auxDataMap["envTime"] = time.Now().Format(time.RFC3339Nano) // RFC3339Nano, most precise format
 				if envTempPersistent {
 					envTempUploadInfluxdb(&influxdbWriteAPI, env)
 				}

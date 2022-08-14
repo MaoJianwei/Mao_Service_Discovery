@@ -32,7 +32,7 @@ func (a *AuxDataProcessorModule) controlLoop() {
 		serviceNodes := grpcKaModule.GetServiceInfo()
 		for _, service := range serviceNodes {
 			for _, processor := range a.processors {
-				(*processor).Process(service.OtherData)
+				go (*processor).Process(service.OtherData)
 			}
 		}
 	}

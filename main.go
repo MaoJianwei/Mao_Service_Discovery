@@ -102,7 +102,9 @@ var serverCmd = &cobra.Command{
 		//
 		//fmt.Printf("---\n%v, %d\n", args, len(args))
 		//return
-		branch.RunServer(&report_server_addr, report_server_port, &web_server_addr, web_server_port, dump_interval, refresh_interval, minLogLevel, silent)
+		branch.RunServer(&report_server_addr, report_server_port, &web_server_addr, web_server_port,
+			influxdbUrl, influxdbToken, influxdbOrgBucket,
+			dump_interval, refresh_interval, minLogLevel, silent)
 	},
 }
 
@@ -145,6 +147,10 @@ func init() {
 
 	serverCmd.Flags().Uint32("dump_interval", 1000, "1000")
 	serverCmd.Flags().Uint32("refresh_interval", 1000, "1000")
+
+	serverCmd.Flags().String("influxdb_url","","https://domain-or-ip:port")
+	serverCmd.Flags().String("influxdb_org_bucket","","same name for Org and Bucket")
+	serverCmd.Flags().String("influxdb_token","","token string from Influxdb")
 
 
 	generalClientCmd.Flags().Uint32("report_interval", 1000, "1000")
@@ -250,6 +256,21 @@ func readServerArgs(cmd *cobra.Command) error {
 	}
 	if refresh_interval < 1 {
 		return errors.New("refresh_interval is invalid")
+	}
+
+	influxdbUrl, err = cmd.Flags().GetString("influxdb_url")
+	if err != nil {
+		return err
+	}
+
+	influxdbOrgBucket, err = cmd.Flags().GetString("influxdb_org_bucket")
+	if err != nil {
+		return err
+	}
+
+	influxdbToken, err = cmd.Flags().GetString("influxdb_token")
+	if err != nil {
+		return err
 	}
 
 	return nil

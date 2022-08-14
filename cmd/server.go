@@ -142,6 +142,7 @@ func showMergeServiceIP(c *gin.Context) {
 
 func RunServer(
 	report_server_addr *net.IP, report_server_port uint32, web_server_addr *net.IP, web_server_port uint32,
+	influxdbUrl string, influxdbToken string, influxdbOrgBucket string,
 	dump_interval uint32, refresh_interval uint32, minLogLevel util.MaoLogLevel, silent bool) {
 
 	util.InitMaoLog(minLogLevel)
@@ -214,14 +215,18 @@ func RunServer(
 	// ==============================================
 
 
+
 	// ====== Aux Data Processor module ======
+	AuxDataProcessor.ConfigInfluxdbUtils(influxdbUrl, influxdbToken, influxdbOrgBucket)
+
 	auxDataModule := &AuxDataProcessor.AuxDataProcessorModule{}
 	auxDataModule.InitAuxDataProcessor()
 
 	MaoCommon.RegisterService(MaoApi.AuxDataModuleRegisterName, auxDataModule)
 
-	var envTempProcessor MaoApi.AuxDataProcessor = AuxDataProcessor.EnvTempProcessor{}
-	auxDataModule.AddProcessor(&envTempProcessor)
+	envTempProcessor := AuxDataProcessor.EnvTempProcessor{}
+	var envTempProcessorAux MaoApi.AuxDataProcessor = envTempProcessor
+	auxDataModule.AddProcessor(&envTempProcessorAux)
 	// =======================================
 
 
