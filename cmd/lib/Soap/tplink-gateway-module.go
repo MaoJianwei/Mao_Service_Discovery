@@ -51,6 +51,7 @@ func (t *TplinkGatewayModule) publishInfluxDB(writeAPI *influxdb2Api.WriteAPI, f
 			influxdb2.NewPointWithMeasurement(MaoApi.GATEWAY_MEASUREMENT).
 				AddTag(MaoApi.GATEWAY_TAG_GEO, "Beijing-HQ").
 				AddField(MaoApi.GATEWAY_FIELD_BytesReceivedSpeed, t.BytesReceivedSpeed).
+				AddField(MaoApi.GATEWAY_FIELD_BytesReceived, t.lastseen_BytesReceived).
 				SetTime(t.lastseen_BytesReceived_timestamp))
 	}
 	if finishFlag & FLAG_GATEWAY_BytesSentSpeed != 0 {
@@ -58,6 +59,7 @@ func (t *TplinkGatewayModule) publishInfluxDB(writeAPI *influxdb2Api.WriteAPI, f
 			influxdb2.NewPointWithMeasurement(MaoApi.GATEWAY_MEASUREMENT).
 				AddTag(MaoApi.GATEWAY_TAG_GEO, "Beijing-HQ").
 				AddField(MaoApi.GATEWAY_FIELD_BytesSentSpeed, t.BytesSentSpeed).
+				AddField(MaoApi.GATEWAY_FIELD_BytesSent, t.lastseen_BytesSent).
 				SetTime(t.lastseen_BytesSent_timestamp))
 	}
 	if finishFlag & FLAG_GATEWAY_PacketsReceivedSpeed != 0 {
@@ -65,6 +67,7 @@ func (t *TplinkGatewayModule) publishInfluxDB(writeAPI *influxdb2Api.WriteAPI, f
 			influxdb2.NewPointWithMeasurement(MaoApi.GATEWAY_MEASUREMENT).
 				AddTag(MaoApi.GATEWAY_TAG_GEO, "Beijing-HQ").
 				AddField(MaoApi.GATEWAY_FIELD_PacketsReceivedSpeed, t.PacketsReceivedSpeed).
+				AddField(MaoApi.GATEWAY_FIELD_PacketsReceived, t.lastseen_PacketsReceived).
 				SetTime(t.lastseen_PacketsReceived_timestamp))
 	}
 	if finishFlag & FLAG_GATEWAY_PacketsSentSpeed != 0 {
@@ -72,6 +75,7 @@ func (t *TplinkGatewayModule) publishInfluxDB(writeAPI *influxdb2Api.WriteAPI, f
 			influxdb2.NewPointWithMeasurement(MaoApi.GATEWAY_MEASUREMENT).
 				AddTag(MaoApi.GATEWAY_TAG_GEO, "Beijing-HQ").
 				AddField(MaoApi.GATEWAY_FIELD_PacketsSentSpeed, t.PacketsSentSpeed).
+				AddField(MaoApi.GATEWAY_FIELD_PacketsSent, t.lastseen_PacketsSent).
 				SetTime(t.lastseen_PacketsSent_timestamp))
 	}
 	if finishFlag & FLAG_GATEWAY_Uptime != 0 {
