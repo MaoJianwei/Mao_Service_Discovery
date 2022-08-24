@@ -7,8 +7,8 @@ require (
 	github.com/influxdata/influxdb-client-go/v2 v2.5.1
 	github.com/spf13/cobra v1.5.0
 	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4
-	google.golang.org/grpc v1.38.0
-	google.golang.org/protobuf v1.26.0
+	google.golang.org/grpc v1.49.0
+	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
