@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<!--enctype="application/json"-->
+<form action="/addOnosInfo" method="post">
+    ONOS Endpoint address and port (e.g. 127.0.0.1:8181) :<br/>
+    <textarea rows="1" cols="50" name="addrPort" id="addrPort"></textarea><br/>
+    <input type="submit" value="Add"/>
+</form>
+<br/>
+<br/>
+<!--Current email info:-->
+<div id="OnosInfoDiv"></div>
+<script src="/static/jquery-3.6.0.min.js" type="text/javascript"></script>
+<script>
+    $.get("/getOnosInfo", function (response, status, xhr) {
+        onosInfo = "<table border=\"1\">"
+        onosInfo += "<tr><td>" + "ADD_DEVICE_API" + "</td>"
+        onosInfo += "<td>" + "<input type='text' name='ADD_DEVICE_API_Show' style='width:600px' readonly value='" + (response['ADD_DEVICE_API'] != null ? response['ADD_DEVICE_API'] : "N/A") + "'/>" + "</td></tr>"
+        onosInfo += "<tr><td>" + "REMOVE_DEVICE_API" + "</td>"
+        onosInfo += "<td>" + "<input type='text' name='REMOVE_DEVICE_API_Show' style='width:600px' readonly value='" + (response['REMOVE_DEVICE_API'] != null ? response['REMOVE_DEVICE_API'] : "N/A") + "'/>" + "</td></tr>"
+        onosInfo += "<tr><td>" + "DELETE_DEVICE_API" + "</td>"
+        onosInfo += "<td>" + "<input type='text' name='DELETE_DEVICE_API_Show' style='width:600px' readonly value='" + (response['DELETE_DEVICE_API'] != null ? response['DELETE_DEVICE_API'] : "N/A") + "'/>" + "</td></tr>"
+        onosInfo += "<tr><td>" + "ADD_LINK_API" + "</td>"
+        onosInfo += "<td>" + "<input type='text' name='ADD_LINK_API_Show' style='width:600px' readonly value='" + (response['ADD_LINK_API'] != null ? response['ADD_LINK_API'] : "N/A") + "'/>" + "</td></tr>"
+        onosInfo += "<tr><td>" + "REMOVE_LINK_API" + "</td>"
+        onosInfo += "<td>" + "<input type='text' name='REMOVE_LINK_API_Show' style='width:600px' readonly value='" + (response['REMOVE_LINK_API'] != null ? response['REMOVE_LINK_API'] : "N/A") + "'/>" + "</td></tr>"
+        onosInfo += "</table>"
+        $("#OnosInfoDiv").html(onosInfo)
+    })
+</script>
+
+</body>
+</html>
