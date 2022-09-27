@@ -11,6 +11,7 @@ import (
 	"MaoServerDiscovery/cmd/lib/MaoCommon"
 	"MaoServerDiscovery/cmd/lib/Restful"
 	"MaoServerDiscovery/cmd/lib/Soap"
+	"MaoServerDiscovery/incubator/OnosTopoShow"
 	"MaoServerDiscovery/util"
 	parent "MaoServerDiscovery/util"
 	"fmt"
@@ -145,7 +146,7 @@ func showMergeServiceIP(c *gin.Context) {
 func RunServer(
 	report_server_addr *net.IP, report_server_port uint32, web_server_addr *net.IP, web_server_port uint32,
 	influxdbUrl string, influxdbToken string, influxdbOrgBucket string,
-	dump_interval uint32, refresh_interval uint32, minLogLevel util.MaoLogLevel, silent bool) {
+	dump_interval uint32, refresh_interval uint32, minLogLevel util.MaoLogLevel, silent bool, version string) {
 
 	util.InitMaoLog(minLogLevel)
 
@@ -173,6 +174,16 @@ func RunServer(
 	MaoCommon.RegisterService(MaoApi.ConfigModuleRegisterName, configModule)
 	// =================================
 
+	// ====== Topology module ======
+	hostname, err := util.GetHostname()
+	if err != nil {
+		hostname = "Mao-Unknown"
+	}
+	onosTopoModule := &OnosTopoShow.OnosTopoModule{}
+	onosTopoModule.InitOnosTopoModule(hostname, version)
+
+	MaoCommon.RegisterService(MaoApi.TopoModuleRegisterName, onosTopoModule)
+	// =================================
 
 	// ====== gRPC KA module ======
 	grpcModule := &GrpcKa.GrpcDetectModule{}
