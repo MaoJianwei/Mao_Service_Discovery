@@ -59,6 +59,71 @@ func updateServerAlive(refresh_interval uint32) {
 }
 */
 
+func getIcmpServices() []*MaoApi.MaoIcmpService {
+	icmpModule := MaoCommon.ServiceRegistryGetIcmpKaModule()
+	if icmpModule == nil {
+		util.MaoLogM(util.WARN, s_MODULE_NAME, "Fail to get IcmpKaModule")
+		return make([]*MaoApi.MaoIcmpService, 0)
+	}
+	return icmpModule.GetServices()
+}
+
+func getGrpcServices() []*MaoApi.GrpcServiceNode {
+	grpcModule := MaoCommon.ServiceRegistryGetGrpcKaModule()
+	if grpcModule == nil {
+		util.MaoLogM(util.WARN, s_MODULE_NAME, "Fail to get GrpcKaModule")
+		return make([]*MaoApi.GrpcServiceNode, 0)
+	}
+	return grpcModule.GetServiceInfo()
+}
+
+func traceServicesForTopologyShow() {
+	for {
+		time.Sleep(1 * time.Second)
+
+		topoModule := MaoCommon.ServiceRegistryGetTopoModule()
+		if topoModule == nil {
+			util.MaoLogM(util.WARN, s_MODULE_NAME, "Fail to get TopoModule")
+			continue
+		}
+
+		icmpService := getIcmpServices()
+		for _, s := range icmpService {
+			event := &MaoApi.TopoEvent{
+				EventType:   0,
+				EventSource: MaoApi.SOURCE_ICMP,
+				ServiceName: s.Address,
+				Timestamp:   s.LastSeen,
+			}
+
+			if s.Alive {
+				event.EventType = MaoApi.SERVICE_UP
+			} else {
+				event.EventType = MaoApi.SERVICE_DOWN
+			}
+
+			topoModule.SendEvent(event)
+		}
+
+		grpcService := getGrpcServices()
+		for _, s := range grpcService {
+			event := &MaoApi.TopoEvent{
+				EventType:   0,
+				EventSource: MaoApi.SOURCE_GRPC,
+				ServiceName: s.Hostname,
+				Timestamp:   s.LocalLastSeen,
+			}
+
+			if s.Alive {
+				event.EventType = MaoApi.SERVICE_UP
+			} else {
+				event.EventType = MaoApi.SERVICE_DOWN
+			}
+
+			topoModule.SendEvent(event)
+		}
+	}
+}
 
 func getGrpcAliveService() []*MaoApi.GrpcServiceNode {
 	serviceAliveTmp := make([]*MaoApi.GrpcServiceNode, 0)
@@ -122,12 +187,7 @@ func showMergeServer(c *gin.Context) {
 func showMergeServiceIP(c *gin.Context) {
 	ret := make([]interface{}, 0)
 
-	icmpModule := MaoCommon.ServiceRegistryGetIcmpKaModule()
-	if icmpModule == nil {
-		util.MaoLogM(util.WARN, s_MODULE_NAME, "Fail to get IcmpKaModule")
-		c.JSON(202, ret)
-	}
-	services := icmpModule.GetServices()
+	services := getIcmpServices()
 	for _, s := range services {
 		ret = append(ret, s)
 	}
@@ -174,16 +234,7 @@ func RunServer(
 	MaoCommon.RegisterService(MaoApi.ConfigModuleRegisterName, configModule)
 	// =================================
 
-	// ====== Topology module ======
-	hostname, err := util.GetHostname()
-	if err != nil {
-		hostname = "Mao-Unknown"
-	}
-	onosTopoModule := &OnosTopoShow.OnosTopoModule{}
-	onosTopoModule.InitOnosTopoModule(hostname, version)
 
-	MaoCommon.RegisterService(MaoApi.TopoModuleRegisterName, onosTopoModule)
-	// =================================
 
 	// ====== gRPC KA module ======
 	grpcModule := &GrpcKa.GrpcDetectModule{}
@@ -223,6 +274,18 @@ func RunServer(
 	// ============================
 
 
+	// ====== Topology module ======
+	hostname, err := util.GetHostname()
+	if err != nil {
+		hostname = "Mao-Unknown"
+	}
+	onosTopoModule := &OnosTopoShow.OnosTopoModule{}
+	onosTopoModule.InitOnosTopoModule(hostname, version)
+
+	MaoCommon.RegisterService(MaoApi.TopoModuleRegisterName, onosTopoModule)
+	// =================================
+
+
 	// ====== Restful Server module - part 2/2 ======
 	restfulServer.StartRestfulServerDaemon(parent.GetAddrPort(web_server_addr, web_server_port))
 	// ==============================================
@@ -254,6 +317,8 @@ func RunServer(
 	if !silent {
 		go startCliOutput(dump_interval)
 	}
+
+	traceServicesForTopologyShow()
 
 	// updateServerAlive(refresh_interval) // Mao: Deprecated, 2022.07.08.
 	for {
