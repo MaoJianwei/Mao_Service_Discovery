@@ -35,6 +35,12 @@ func ServiceRegistryGetEmailModule() (serviceInstance MaoApi.EmailModule) {
 }
 
 // if fail, return nil
+func ServiceRegistryGetTopoModule() (serviceInstance MaoApi.TopoModule) {
+	topoModule, _ := GetService(MaoApi.TopoModuleRegisterName).(MaoApi.TopoModule)
+	return topoModule
+}
+
+// if fail, return nil
 func ServiceRegistryGetWechatModule() (serviceInstance MaoApi.WechatModule) {
 	wechatModule, _ := GetService(MaoApi.WechatModuleRegisterName).(MaoApi.WechatModule)
 	return wechatModule
