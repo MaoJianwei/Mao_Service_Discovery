@@ -177,7 +177,7 @@ func (t *TplinkGatewayModule) controlLoop(triggerChannel *chan uint) {
 
 		*triggerChannel <- finishFlag
 
-		util.MaoLogM(util.HOT_DEBUG, p_TPLINK_MODULE_NAME, "BytesSentSpeed: %d, BytesReceivedSpeed: %d, PacketsSentSpeed: %d, PacketsReceivedSpeed: %d, Uptime: %d",
+		util.MaoLogM(util.DEBUG, p_TPLINK_MODULE_NAME, "BytesSentSpeed: %d, BytesReceivedSpeed: %d, PacketsSentSpeed: %d, PacketsReceivedSpeed: %d, Uptime: %d",
 			t.BytesSentSpeed, t.BytesReceivedSpeed, t.PacketsSentSpeed, t.PacketsReceivedSpeed, t.Uptime)
 	}
 }
