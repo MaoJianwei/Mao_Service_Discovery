@@ -2,11 +2,16 @@ package Soap
 
 import (
 	"log"
+	"reflect"
+	"runtime"
 	"testing"
 	"time"
 )
 
 func TestGetExternalIPAddress(t *testing.T) {
+	sss := runtime.FuncForPC(reflect.ValueOf(GetTotalBytesSent).Pointer()).Name()
+	log.Println(sss)
+
 	t1 := time.Now()
 	time.Sleep(2 * time.Second)
 	t2 := time.Now()
