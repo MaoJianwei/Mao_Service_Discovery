@@ -10,6 +10,5 @@ func RegisterService(apiName string, serviceInstancePointer interface{}) {
 
 // now: return the instance, not the pointer of the instance
 func GetService(apiName string) (serviceInstance interface{}) {
-	// todo, test me
 	return serviceRegistry[apiName]
 }
