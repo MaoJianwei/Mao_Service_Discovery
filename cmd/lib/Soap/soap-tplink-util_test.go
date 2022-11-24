@@ -19,6 +19,8 @@ func TestGetExternalIPAddress(t *testing.T) {
 	log.Println(s)
 
 	for {
+		break
+
 		totalBytesSent, err := GetTotalBytesSent()
 		log.Printf("TotalBytesSent: %d, err: %d", totalBytesSent, err)
 
