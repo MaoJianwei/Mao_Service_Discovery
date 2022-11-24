@@ -79,7 +79,7 @@ func getGrpcServices() []*MaoApi.GrpcServiceNode {
 
 func traceServicesForTopologyShow() {
 	for {
-		time.Sleep(1 * time.Second)
+		time.Sleep(3 * time.Second)
 
 		topoModule := MaoCommon.ServiceRegistryGetTopoModule()
 		if topoModule == nil {
