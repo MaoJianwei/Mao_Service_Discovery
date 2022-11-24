@@ -102,7 +102,7 @@ func (t *TplinkGatewayModule) pushLoop(triggerChannel *chan uint) {
 func (t *TplinkGatewayModule) controlLoop(triggerChannel *chan uint) {
 	for {
 		time.Sleep(2 * time.Second)
-		 var finishFlag uint = 0
+		var finishFlag uint = 0
 
 		newBytesReceived, err := GetTotalBytesReceived()
 		newBytesReceived_timestamp := time.Now()
