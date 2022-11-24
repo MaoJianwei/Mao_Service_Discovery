@@ -225,6 +225,18 @@ func (m *IcmpDetectModule) controlLoop() {
 			m.serviceStore.Delete(delService)
 			util.MaoLogM(util.DEBUG, MODULE_NAME, "Del service %s", delService)
 			m.removeOldServiceFromConfig(delService)
+
+			topoModule := MaoCommon.ServiceRegistryGetTopoModule()
+			if topoModule == nil {
+				util.MaoLogM(util.WARN, MODULE_NAME, "Fail to get TopoModule, can't send DELETE event")
+			} else {
+				topoModule.SendEvent(&MaoApi.TopoEvent{
+					EventType:   MaoApi.SERVICE_DELETE,
+					EventSource: MaoApi.SOURCE_ICMP,
+					ServiceName: delService,
+					Timestamp:   time.Now(),
+				})
+			}
 		case <-checkTimer.C:
 			// aliveness checking
 			m.serviceStore.Range(func(key, value interface{}) bool {
