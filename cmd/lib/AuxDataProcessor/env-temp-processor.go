@@ -38,7 +38,7 @@ func (e EnvTempProcessor) Process(auxData string) {
 		util.MaoLogM(util.WARN, p_EnvTemp_MODULE_NAME, "Fail to parse time string as RFC3339Nano format, %s, err: %s", auxDataMap.EnvTime, err.Error())
 		return
 	}
-	util.MaoLogM(util.HOT_DEBUG, p_EnvTemp_MODULE_NAME, "Get temp %f, %s", auxDataMap.EnvTemp, time.Now().String())
+	util.MaoLogM(util.DEBUG, p_EnvTemp_MODULE_NAME, "Get temp %f, %s", auxDataMap.EnvTemp, time.Now().String())
 
 	InfluxDB.EnvTempUploadInfluxdb(auxDataMap.EnvGeo, envTime, auxDataMap.EnvTemp)
 }
