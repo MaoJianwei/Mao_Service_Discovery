@@ -186,7 +186,7 @@ func (o *OnosTopoModule) topoEventLoop() {
 		select {
 		case event := <-o.topoEventChannel:
 			qingdao := len(o.topoEventChannel)
-			util.MaoLogM(util.HOT_DEBUG, MODULE_NAME, "buffer len: %d", qingdao)
+			util.MaoLogM(util.DEBUG, MODULE_NAME, "buffer len: %d", qingdao)
 			switch event.EventType {
 			case MaoApi.SERVICE_UP:
 				localPort, ok1 := o.portMapping[fmt.Sprintf("%s-%s-%s", o.hostname, event.ServiceName, event.EventSource)]
@@ -249,10 +249,11 @@ func (o *OnosTopoModule) topoAddDevice(serviceName string, timestamp string, eve
 		return
 	}
 
-	sendRequest("POST", o.ADD_DEVICE_API, jsonBytes)
-	//routerDatas = append(routerDatas, jsonBytes)
-	//routerNames = append(routerNames, router.deviceName)
-	util.MaoLogM(util.HOT_DEBUG, MODULE_NAME, "Add device: %s", serviceName)
+	if sendRequest("POST", o.ADD_DEVICE_API, jsonBytes) {
+		//routerDatas = append(routerDatas, jsonBytes)
+		//routerNames = append(routerNames, router.deviceName)
+		util.MaoLogM(util.INFO, MODULE_NAME, "Add device: %s", serviceName)
+	}
 }
 
 func (o *OnosTopoModule) topoOfflineDevice(serviceName string) {
@@ -269,8 +270,9 @@ func (o *OnosTopoModule) topoOfflineDevice(serviceName string) {
 		return
 	}
 
-	sendRequest("POST", o.REMOVE_DEVICE_API, jsonBytes)
-	util.MaoLogM(util.HOT_DEBUG, MODULE_NAME, "Offline device: %s", serviceName)
+	if sendRequest("POST", o.REMOVE_DEVICE_API, jsonBytes) {
+		util.MaoLogM(util.INFO, MODULE_NAME, "Offline device: %s", serviceName)
+	}
 }
 
 func (o *OnosTopoModule) topoDeleteDevice(serviceName string) {
@@ -279,8 +281,9 @@ func (o *OnosTopoModule) topoDeleteDevice(serviceName string) {
 		return
 	}
 
-	sendRequest("DELETE", fmt.Sprintf(o.DELETE_DEVICE_API, serviceName), nil)
-	util.MaoLogM(util.HOT_DEBUG, MODULE_NAME, "Delete device: %s", serviceName)
+	if sendRequest("DELETE", fmt.Sprintf(o.DELETE_DEVICE_API, serviceName), nil) {
+		util.MaoLogM(util.INFO, MODULE_NAME, "Delete device: %s", serviceName)
+	}
 }
 
 func (o *OnosTopoModule) topoAddLink(serviceName1 string, portId1 uint, serviceName2 string, portId2 uint) {
@@ -303,18 +306,24 @@ func (o *OnosTopoModule) topoAddLink(serviceName1 string, portId1 uint, serviceN
 		return
 	}
 
-	sendRequest("POST", o.ADD_LINK_API, jsonBytes)
-	//linkDatas = append(linkDatas, jsonBytes)
-	//linkNames = append(linkNames, GenerateLinkName(r1.deviceName, r2.deviceName))
-	util.MaoLogM(util.HOT_DEBUG, MODULE_NAME, "Add link: %s - %s", serviceName1, serviceName2)
+	if sendRequest("POST", o.ADD_LINK_API, jsonBytes) {
+		//linkDatas = append(linkDatas, jsonBytes)
+		//linkNames = append(linkNames, GenerateLinkName(r1.deviceName, r2.deviceName))
+		util.MaoLogM(util.INFO, MODULE_NAME, "Add link: %s - %s", serviceName1, serviceName2)
+	}
 }
 
-func sendRequest(method string, url string, body []byte) {
+func sendRequest(method string, url string, body []byte) bool {
+	if url == "" {
+		util.MaoLogM(util.DEBUG, MODULE_NAME, "API URL is not configured, not send request.")
+		return false
+	}
+
 	req, err := http.NewRequest(method, url, bytes.NewBuffer(body))
 	if err != nil {
 		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to create request: %s %s, %s",
 			method, url, err.Error())
-		return
+		return false
 	}
 
 	// ONOS Web default password, karaf:karaf, basic authentication
@@ -325,11 +334,14 @@ func sendRequest(method string, url string, body []byte) {
 	if err != nil {
 		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to do request: %s %s, err: %s",
 			req.Method, req.URL.String(), err.Error())
-		return
+		return false
 	}
 
 	if resp.StatusCode != 200 {
 		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to finish request: %s %s, http code: %d, err: %s",
 			req.Method, req.URL.String(), resp.StatusCode, resp.Status)
+		return false
 	}
+
+	return true
 }
