@@ -37,7 +37,10 @@ func nat66UploadInfluxdb(writeAPI *influxdb2Api.WriteAPI, v6In uint64, v6Out uin
 func EnvTempUploadInfluxdb(geo string, timestamp time.Time, envTemperature float32) {
 	client, writeAPI := CreateClientAndWriteAPI()
 	if writeAPI == nil {
-		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to upload env temp, InfluxDB API URLs haven't configured yet.")
+		if time.Now().Second() % 10 == 0 {
+			// suppress the number of logs
+			util.MaoLogM(util.WARN, MODULE_NAME, "Fail to upload env temp, InfluxDB API URLs haven't configured yet.")
+		}
 		return
 	}
 	defer (*client).Close()
