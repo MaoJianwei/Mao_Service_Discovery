@@ -1,9 +1,14 @@
 package InfluxDB
 
 import (
+	"MaoServerDiscovery/util"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	influxdb2Api "github.com/influxdata/influxdb-client-go/v2/api"
 	"time"
+)
+
+const (
+	MODULE_NAME = "InfluxDB-Util"
 )
 
 var (
@@ -31,6 +36,10 @@ func nat66UploadInfluxdb(writeAPI *influxdb2Api.WriteAPI, v6In uint64, v6Out uin
 //
 func EnvTempUploadInfluxdb(geo string, timestamp time.Time, envTemperature float32) {
 	client, writeAPI := CreateClientAndWriteAPI()
+	if writeAPI == nil {
+		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to upload env temp, InfluxDB API URLs haven't configured yet.")
+		return
+	}
 	defer (*client).Close()
 
 	// write point asynchronously
@@ -44,6 +53,10 @@ func EnvTempUploadInfluxdb(geo string, timestamp time.Time, envTemperature float
 }
 
 func CreateClientAndWriteAPI() (*influxdb2.Client, *influxdb2Api.WriteAPI) {
+	if config_influxdbUrl == "" {
+		return nil, nil
+	}
+
 	influxdbClient := influxdb2.NewClient(config_influxdbUrl, config_influxdbToken)
 	influxdbWriteAPI := influxdbClient.WriteAPI(config_influxdbOrgBucket, config_influxdbOrgBucket)
 	return &influxdbClient, &influxdbWriteAPI

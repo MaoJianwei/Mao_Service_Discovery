@@ -91,7 +91,17 @@ func (t *TplinkGatewayModule) publishInfluxDB(writeAPI *influxdb2Api.WriteAPI, f
 }
 
 func (t *TplinkGatewayModule) pushLoop(triggerChannel *chan uint) {
-	client, writeApi := InfluxDB.CreateClientAndWriteAPI()
+	var client *influxdb2.Client
+	var writeApi *influxdb2Api.WriteAPI
+
+	for {
+		// do...while, wait for being well configured.
+		client, writeApi = InfluxDB.CreateClientAndWriteAPI()
+		if writeApi != nil {
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
 	defer (*client).Close()
 
 	for finishFlag := range *triggerChannel {
