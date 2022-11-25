@@ -82,7 +82,7 @@ func (o *OnosTopoModule) configRestControlInterface() {
 		return
 	}
 
-	restfulServer.RegisterGetApi(URL_ONOS_HOMEPAGE, o.showOnosPage)
+	restfulServer.RegisterUiPage(URL_ONOS_HOMEPAGE, o.showOnosPage)
 	restfulServer.RegisterGetApi(URL_ONOS_SHOW, o.showOnosInfo)
 	restfulServer.RegisterPostApi(URL_ONOS_CONFIG, o.processOnosInfo)
 }

@@ -161,7 +161,7 @@ func (s *SmtpEmailModule) configRestControlInterface() {
 		return
 	}
 
-	restfulServer.RegisterGetApi(URL_EMAIL_HOMEPAGE, s.showEmailPage)
+	restfulServer.RegisterUiPage(URL_EMAIL_HOMEPAGE, s.showEmailPage)
 	restfulServer.RegisterGetApi(URL_EMAIL_SHOW, s.showEmailInfo)
 	restfulServer.RegisterPostApi(URL_EMAIL_CONFIG, s.processEmailInfo)
 }

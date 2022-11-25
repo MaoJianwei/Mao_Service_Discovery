@@ -512,7 +512,7 @@ func (m *IcmpDetectModule) configRestControlInterface() {
 		return
 	}
 
-	restfulServer.RegisterGetApi(URL_CONFIG_HOMEPAGE, showConfigPage)
+	restfulServer.RegisterUiPage(URL_CONFIG_HOMEPAGE, showConfigPage)
 	restfulServer.RegisterGetApi(URL_CONFIG_SHOW_SERVICE_IP, m.showServiceIps)
 
 	restfulServer.RegisterPostApi(URL_CONFIG_ADD_SERVICE_IP, m.processServiceIp)
