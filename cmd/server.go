@@ -221,7 +221,7 @@ func RunServer(
 	//restfulServer.RegisterGetApi("/json", showServers) // Mao: Deprecated, 2022.07.08.
 	//restfulServer.RegisterGetApi("/plain", showServerPlain) // Mao: Deprecated, 2022.07.08.
 	restfulServer.RegisterGetApi("/showMergeServiceIP", showMergeServiceIP)
-	restfulServer.RegisterGetApi("/", showMergeServer)
+	restfulServer.RegisterUiPage("/Dashboard", showMergeServer)
 	// ==============================================
 
 

@@ -2,6 +2,7 @@ package Restful
 
 import (
 	"MaoServerDiscovery/util"
+	"fmt"
 	"github.com/gin-gonic/gin"
 )
 
@@ -13,6 +14,10 @@ type RestfulServerImpl struct {
 	restful *gin.Engine
 
 	serviceAddr string
+
+	uiPageLinks []string
+	getApiLinks []string
+	postApiLinks []string
 }
 
 func (r *RestfulServerImpl) InitRestfulServer() {
@@ -21,17 +26,52 @@ func (r *RestfulServerImpl) InitRestfulServer() {
 
 	r.restful.LoadHTMLGlob("resource/*")
 	r.restful.Static("/static/", "resource")
+
+	r.restful.GET("/", r.showApiListPage)
+
+	// not need to initiate []string
+}
+
+func (r *RestfulServerImpl) RegisterUiPage(relativePath string, handlers ...gin.HandlerFunc) {
+	r.restful.GET(relativePath, handlers...)
+	r.uiPageLinks = append(r.uiPageLinks, relativePath)
 }
 
 func (r *RestfulServerImpl) RegisterGetApi(relativePath string, handlers ...gin.HandlerFunc) {
 	r.restful.GET(relativePath, handlers...)
-
+	r.getApiLinks = append(r.getApiLinks, relativePath)
 }
 
 func (r *RestfulServerImpl) RegisterPostApi(relativePath string, handlers ...gin.HandlerFunc) {
 	r.restful.POST(relativePath, handlers...)
+	r.postApiLinks = append(r.postApiLinks, relativePath)
 }
 
+func (r *RestfulServerImpl) showApiListPage(c *gin.Context) {
+	htmlHead := `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>MaoServiceDiscovery: URLs</title></head><body>`
+
+	ret := "UI:<br/>"
+	for _, v := range r.uiPageLinks {
+		ret = fmt.Sprintf(`%s<a href="%s">%s</a><br/>`, ret, v, v)
+	}
+
+	ret += "<br/>GET API:<br/>"
+	for _, v := range r.getApiLinks {
+		ret = fmt.Sprintf(`%s<a href="%s">%s</a><br/>`, ret, v, v)
+	}
+
+	ret += "<br/>POST API:<br/>"
+	for _, v := range r.postApiLinks {
+		ret = fmt.Sprintf("%s%s<br/>", ret, v)
+	}
+
+	htmlTail := `</body></html>`
+
+	ret = fmt.Sprintf("%s%s%s", htmlHead, ret, htmlTail)
+
+	//c.String(200, ret)
+	c.Data(200, "text/html; charset=utf-8", []byte(ret))
+}
 
 func (r *RestfulServerImpl) startRestfulServer() {
 	util.MaoLogM(util.INFO, MODULE_NAME, "Starting web show %s ...", r.serviceAddr)

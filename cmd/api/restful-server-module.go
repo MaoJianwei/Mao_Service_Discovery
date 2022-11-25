@@ -7,6 +7,7 @@ var (
 )
 
 type RestfulServerModule interface {
+	RegisterUiPage(relativePath string, handlers ...gin.HandlerFunc)
 	RegisterGetApi(relativePath string, handlers ...gin.HandlerFunc)
 	RegisterPostApi(relativePath string, handlers ...gin.HandlerFunc)
 }
