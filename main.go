@@ -45,7 +45,7 @@ var (
 
 var rootCmd = &cobra.Command{
 	Use: "mao-service-discovery",
-	Short:   "Mao-Service-Discovery, welcome to join our Github community. https://github.com/MaoJianwei/MaoServiceDiscovery",
+	Short:   "Mao-Service-Discovery, welcome to join our Github community. https://github.com/MaoJianwei/Mao_Service_Discovery",
 	Long:    "Mao-Service-Discovery:\n\nService registry & Service discovery & Service keep-alive.\n\nWelcome to join our Github community. https://github.com/MaoJianwei/MaoServiceDiscovery",
 	//Example: "beijing",
 	Version: VERSION,
