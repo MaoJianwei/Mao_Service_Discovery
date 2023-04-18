@@ -117,7 +117,7 @@ func RunGeneralClient(report_server_addr *net.IP, report_server_port uint32, rep
 
 	var influxdbClient influxdb2.Client
 	var influxdbWriteAPI influxdb2Api.WriteAPI
-	if nat66Persistent {
+	if nat66Persistent || envTempPersistent {
 		util.MaoLogM(util.INFO, c_MODULE_NAME, "Initiate influxdb client ...")
 		influxdbClient = influxdb2.NewClient(influxdbUrl, influxdbToken)
 		defer influxdbClient.Close()
