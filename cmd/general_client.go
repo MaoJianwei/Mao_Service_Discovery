@@ -1,6 +1,7 @@
 package branch
 
 import (
+	"MaoServerDiscovery/cmd/lib/MaoCommon"
 	pb "MaoServerDiscovery/grpc.maojianwei.com/server/discovery/api"
 	util "MaoServerDiscovery/util"
 	"encoding/json"
@@ -22,7 +23,20 @@ const (
 
 var (
 	envTemp float64
+	gpsLast *MaoCommon.GpsData
 )
+
+func nat66UploadInfluxdb(writeAPI *influxdb2Api.WriteAPI, v6In uint64, v6Out uint64) {
+	// write point asynchronously
+	(*writeAPI).WritePoint(
+		influxdb2.NewPointWithMeasurement("NAT66_Gateway").
+			AddTag("Geo", "Beijing-HQ").
+			AddField("v6In", v6In).
+			AddField("v6Out", v6Out).
+			SetTime(time.Now()))
+	// Not flush writes, avoid blocking my thread, then the lib's thread will block itself.
+	//(*writeAPI).Flush()
+}
 
 /*
     return v6In,v6Out,error
@@ -54,17 +68,7 @@ func getNat66GatewayData() (uint64, uint64, error) {
 	return v6In, v6Out, nil
 }
 
-func nat66UploadInfluxdb(writeAPI *influxdb2Api.WriteAPI, v6In uint64, v6Out uint64) {
-	// write point asynchronously
-	(*writeAPI).WritePoint(
-		influxdb2.NewPointWithMeasurement("NAT66_Gateway").
-			AddTag("Geo", "Beijing-HQ").
-			AddField("v6In", v6In).
-			AddField("v6Out", v6Out).
-			SetTime(time.Now()))
-	// Not flush writes, avoid blocking my thread, then the lib's thread will block itself.
-	//(*writeAPI).Flush()
-}
+
 
 func envTempUploadInfluxdb(writeAPI *influxdb2Api.WriteAPI, envTemperature float64) {
 	// write point asynchronously
@@ -109,11 +113,95 @@ func updateEnvironmentTemperature() {
 	}
 }
 
+func gpsDataUploadInfluxdb(writeAPI *influxdb2Api.WriteAPI, gpsData *MaoCommon.GpsData) {
+	// write point asynchronously
+	(*writeAPI).WritePoint(
+		influxdb2.NewPointWithMeasurement("GPS").
+			AddTag("Geo", "Beijing-HQ").
+			AddField("GPS_Timestamp", gpsData.Timestamp).
+			AddField("GPS_Latitude", gpsData.Latitude).
+			AddField("GPS_Longitude", gpsData.Longitude).
+			AddField("GPS_Altitude", gpsData.Altitude).
+			AddField("GPS_Satellite", gpsData.Satellite).
+			AddField("GPS_Hdop", gpsData.Hdop).
+			AddField("GPS_Vdop", gpsData.Vdop).
+			SetTime(time.Now()))
+	// Not flush writes, avoid blocking my thread, then the lib's thread will block itself.
+	//(*writeAPI).Flush()
+}
+
+func updateGpsInfo(gpsApiData string) (*MaoCommon.GpsData) {
+
+	var err1 error
+	var err2 error
+	var err3 error
+	var err4 error
+
+	newGps := &MaoCommon.GpsData{}
+
+	items := strings.Split(gpsApiData, ";")
+	for _, item := range items {
+
+		kv := strings.Split(item, "=")
+		switch kv[0] {
+		case "GPS":
+			datas := strings.Split(kv[1], ",")
+			if datas[0] == "lost" || datas[0] == "init" {
+				return nil
+			}
+
+			newGps.Latitude, err1 = strconv.ParseFloat(datas[0], 64)
+			newGps.Longitude, err2 = strconv.ParseFloat(datas[1], 64)
+			newGps.Altitude, err3 = strconv.ParseFloat(datas[2], 64)
+			newGps.Satellite, err4 = strconv.ParseUint(datas[3], 10, 64)
+
+			if err1 != nil || err2 != nil || err3 != nil || err4 != nil {
+				util.MaoLogM(util.WARN, c_MODULE_NAME, "Fail to parse GPS data, %s; %s; %s; %s",
+					err1.Error(), err2.Error(), err3.Error(), err4.Error())
+				return nil
+			}
+
+		case "GpsTime":
+			newGps.Timestamp = kv[1]
+
+		case "GPS_Precision":
+			datas := strings.Split(kv[1], ",")
+			newGps.Hdop, err1 = strconv.ParseFloat(datas[0], 64)
+			newGps.Vdop, err2 = strconv.ParseFloat(datas[1], 64)
+
+			if err1 != nil || err2 != nil {
+				util.MaoLogM(util.WARN, c_MODULE_NAME, "Fail to parse GPS_Precision data, %s; %s",
+					err1.Error(), err2.Error())
+				return nil
+			}
+		}
+	}
+	return newGps
+}
+
+func readAndUpdateGpsInfo() {
+	for {
+		ccc := exec.Command("/bin/bash", "-c", "cat /home/pi/MaoTemp/monitorAPI.html")
+		gpsData, err := ccc.CombinedOutput()
+		if err == nil {
+			gpsLast = updateGpsInfo(string(gpsData))
+		} else {
+			util.MaoLogM(util.WARN, c_MODULE_NAME, "Fail to get GPS API data, %s", err.Error())
+		}
+
+		time.Sleep(1 * time.Second)
+	}
+}
+
 func RunGeneralClient(report_server_addr *net.IP, report_server_port uint32, report_interval uint32, silent bool,
 	nat66Gateway bool, nat66Persistent bool, influxdbUrl string, influxdbOrgBucket string, influxdbToken string,
 	envTempMonitor bool, envTempPersistent bool, minLogLevel util.MaoLogLevel) {
 
 	util.InitMaoLog(minLogLevel)
+
+	gpsTempSwitch := true
+	gpsPersistentTempSwitch := true
+
 
 	var influxdbClient influxdb2.Client
 	var influxdbWriteAPI influxdb2Api.WriteAPI
@@ -125,6 +213,9 @@ func RunGeneralClient(report_server_addr *net.IP, report_server_port uint32, rep
 	}
 	if envTempMonitor {
 		go updateEnvironmentTemperature()
+	}
+	if gpsTempSwitch {
+		go readAndUpdateGpsInfo()
 	}
 
 	util.MaoLogM(util.INFO, c_MODULE_NAME, "Connect to center ...")
@@ -192,6 +283,22 @@ func RunGeneralClient(report_server_addr *net.IP, report_server_port uint32, rep
 				auxDataMap["envTime"] = time.Now().Format(time.RFC3339Nano) // RFC3339Nano, most precise format
 				if envTempPersistent {
 					envTempUploadInfluxdb(&influxdbWriteAPI, env)
+				}
+			}
+			if gpsTempSwitch {
+				gpsNow := gpsLast
+				if gpsNow != nil {
+					auxDataMap["GPS_Timestamp"] = gpsNow.Timestamp
+					auxDataMap["GPS_Latitude"] = gpsNow.Latitude
+					auxDataMap["GPS_Longitude"] = gpsNow.Longitude
+					auxDataMap["GPS_Altitude"] = gpsNow.Altitude
+					auxDataMap["GPS_Satellite"] = gpsNow.Satellite
+					auxDataMap["GPS_Hdop"] = gpsNow.Hdop
+					auxDataMap["GPS_Vdop"] = gpsNow.Vdop
+
+					if gpsPersistentTempSwitch {
+						gpsDataUploadInfluxdb(&influxdbWriteAPI, gpsNow)
+					}
 				}
 			}
 
