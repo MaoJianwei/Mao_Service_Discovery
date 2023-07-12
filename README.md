@@ -4,6 +4,10 @@
 [![Docker Image CI](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/docker-image.yml/badge.svg)](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/docker-image.yml)
 [![Docker Image Publish](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/docker-publish.yml)
 
+## Software Architecture
+Please refer to [MODULES.md](https://github.com/MaoJianwei/Mao_Service_Discovery/blob/master/MODULES.md) file.
+
+## Initial need
 Discover your service by two methods:
 
 1. Client-Server mode, using gRPC stream.
