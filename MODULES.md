@@ -23,7 +23,7 @@
 
 ## Modules
 1. AuxDataProcessor
-   - environment-temp
+   - environment-temperature
 2. Config
 3. Email
 4. gRPC-KeepAlive
