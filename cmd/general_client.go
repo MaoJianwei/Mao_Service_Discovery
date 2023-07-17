@@ -194,18 +194,17 @@ func readAndUpdateGpsInfo() {
 }
 
 func RunGeneralClient(report_server_addr *net.IP, report_server_port uint32, report_interval uint32, silent bool,
-	nat66Gateway bool, nat66Persistent bool, influxdbUrl string, influxdbOrgBucket string, influxdbToken string,
-	envTempMonitor bool, envTempPersistent bool, minLogLevel util.MaoLogLevel) {
+	influxdbUrl string, influxdbOrgBucket string, influxdbToken string,
+	nat66Gateway bool, nat66Persistent bool,
+	gpsMonitor bool, gpsPersistent bool,
+	envTempMonitor bool, envTempPersistent bool,
+	minLogLevel util.MaoLogLevel) {
 
 	util.InitMaoLog(minLogLevel)
 
-	gpsTempSwitch := true
-	gpsPersistentTempSwitch := true
-
-
 	var influxdbClient influxdb2.Client
 	var influxdbWriteAPI influxdb2Api.WriteAPI
-	if nat66Persistent || envTempPersistent {
+	if nat66Persistent || gpsPersistent || envTempPersistent {
 		util.MaoLogM(util.INFO, c_MODULE_NAME, "Initiate influxdb client ...")
 		influxdbClient = influxdb2.NewClient(influxdbUrl, influxdbToken)
 		defer influxdbClient.Close()
@@ -214,7 +213,7 @@ func RunGeneralClient(report_server_addr *net.IP, report_server_port uint32, rep
 	if envTempMonitor {
 		go updateEnvironmentTemperature()
 	}
-	if gpsTempSwitch {
+	if gpsMonitor {
 		go readAndUpdateGpsInfo()
 	}
 
@@ -285,7 +284,7 @@ func RunGeneralClient(report_server_addr *net.IP, report_server_port uint32, rep
 					envTempUploadInfluxdb(&influxdbWriteAPI, env)
 				}
 			}
-			if gpsTempSwitch {
+			if gpsMonitor {
 				gpsNow := gpsLast
 				if gpsNow != nil {
 					auxDataMap["GPS_Timestamp"] = gpsNow.Timestamp
@@ -296,7 +295,7 @@ func RunGeneralClient(report_server_addr *net.IP, report_server_port uint32, rep
 					auxDataMap["GPS_Hdop"] = gpsNow.Hdop
 					auxDataMap["GPS_Vdop"] = gpsNow.Vdop
 
-					if gpsPersistentTempSwitch {
+					if gpsPersistent {
 						gpsDataUploadInfluxdb(&influxdbWriteAPI, gpsNow)
 					}
 				}

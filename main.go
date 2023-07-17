@@ -35,6 +35,9 @@ var (
 	nat66Gateway bool
 	nat66Persistent bool
 
+	gpsMonitor bool
+	gpsPersistent bool
+
 	influxdbUrl string
 	influxdbOrgBucket string
 	influxdbToken string
@@ -76,8 +79,9 @@ var generalClientCmd = &cobra.Command{
 		}
 
 		branch.RunGeneralClient(&report_server_addr, report_server_port, report_interval, silent,
-			nat66Gateway, nat66Persistent, influxdbUrl, influxdbOrgBucket, influxdbToken,
-			envTempMonitor, envTempPersistent, minLogLevel)
+			influxdbUrl, influxdbOrgBucket, influxdbToken,
+			nat66Gateway, nat66Persistent, gpsMonitor, gpsPersistent, envTempMonitor, envTempPersistent,
+			minLogLevel)
 	},
 }
 
@@ -132,8 +136,11 @@ Client:
 	- influxdb_org_bucket : organization and bucket names
 	- influxdb_token : token to access influxdb database
 
-	- enable_aux_nat66_stat : enable to report nat66 statistics
+	- enable_aux_nat66_stat : enable to pull statistics of nat66 gateway
 	- enable_aux_nat66_persistent : enable to persistent nat66 statistics to database
+
+	- enable_gps_monitor : enable to read GPS data via serial port from the GPS module
+	- enable_gps_persistent : enable to persistent GPS statistics to database
 
 	- enable_aux_env_temp_monitor : enable to monitor environment temperature
 	- enable_aux_env_temp_persistent : enable to upload environment temperature to Influxdb
@@ -159,12 +166,15 @@ func init() {
 
 	generalClientCmd.Flags().Uint32("report_interval", 1000, "1000")
 
-	generalClientCmd.Flags().String("influxdb_url","","https://domain-or-ip:port")
+	generalClientCmd.Flags().String("influxdb_url","","https://<domain-or-ip>:<port>")
 	generalClientCmd.Flags().String("influxdb_org_bucket","","same name for Org and Bucket")
 	generalClientCmd.Flags().String("influxdb_token","","token string from Influxdb")
 
-	generalClientCmd.Flags().Bool("enable_aux_nat66_stat", false, "Usable only in linux with root privilege")
-	generalClientCmd.Flags().Bool("enable_aux_nat66_persistent", false, "Enable to upload stat to Influxdb")
+	generalClientCmd.Flags().Bool("enable_aux_nat66_stat", false, "Enable to pull statistics of nat66 gateway. Usable only in linux with root privilege")
+	generalClientCmd.Flags().Bool("enable_aux_nat66_persistent", false, "Enable to upload nat66 stat to Influxdb")
+
+	generalClientCmd.Flags().Bool("enable_gps_monitor", false, "Enable to read GPS data via serial port from the GPS module")
+	generalClientCmd.Flags().Bool("enable_gps_persistent", false, "Enable to upload GPS data to Influxdb")
 
 	generalClientCmd.Flags().Bool("enable_aux_env_temp_monitor", false, "Enable to monitor environment temperature")
 	generalClientCmd.Flags().Bool("enable_aux_env_temp_persistent", false, "Enable to upload environment temperature to Influxdb")
@@ -318,6 +328,17 @@ func readGeneralClientArgs(cmd *cobra.Command) error {
 	}
 
 	nat66Persistent, err = cmd.Flags().GetBool("enable_aux_nat66_persistent")
+	if err != nil {
+		return err
+	}
+
+
+	gpsMonitor, err = cmd.Flags().GetBool("enable_gps_monitor")
+	if err != nil {
+		return err
+	}
+
+	gpsPersistent, err = cmd.Flags().GetBool("enable_gps_persistent")
 	if err != nil {
 		return err
 	}
