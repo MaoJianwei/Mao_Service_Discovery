@@ -7,6 +7,9 @@
 ## Software Architecture
 Please refer to [MODULES.md](https://github.com/MaoJianwei/Mao_Service_Discovery/blob/master/MODULES.md) file.
 
+## Todo List
+Please refer to the [agile board](https://github.com/users/MaoJianwei/projects/3).
+
 ## Initial need
 Discover your service by two methods:
 
