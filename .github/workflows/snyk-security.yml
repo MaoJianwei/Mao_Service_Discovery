@@ -19,14 +19,16 @@
 name: Snyk Security
 
 on:
-  push:
-    branches: [ "*" ]
-    tags: [ '*.*' ]
-  pull_request:
-    branches: [ "*"]
-    tags: [ '*.*' ]
   schedule:
     - cron: '*/5 * * * *'
+  push:
+    branches: [ "*" ]
+    # Build semver tags as releases.
+    tags: [ '*.*' ]
+  pull_request:
+    branches: [ "*" ]
+    # Build semver tags as releases.
+    tags: [ '*.*' ]
     
 permissions:
   contents: read
