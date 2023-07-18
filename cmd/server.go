@@ -144,7 +144,7 @@ func getGrpcAliveService() []*MaoApi.GrpcServiceNode {
 	return serviceAliveTmp
 }
 
-func startCliOutput(dump_interval uint32) {
+func startCliOutput(cli_dump_interval uint32) {
 	count := 1
 	for {
 		services := getGrpcAliveService()
@@ -156,7 +156,7 @@ func startCliOutput(dump_interval uint32) {
 		util.MaoLogM(util.INFO, s_MODULE_NAME, "========== %d ==========\n%s", count, dump)
 
 		count++
-		time.Sleep(time.Duration(dump_interval) * time.Millisecond)
+		time.Sleep(time.Duration(cli_dump_interval) * time.Millisecond)
 	}
 }
 
@@ -206,7 +206,7 @@ func showMergeServiceIP(c *gin.Context) {
 func RunServer(
 	report_server_addr *net.IP, report_server_port uint32, web_server_addr *net.IP, web_server_port uint32,
 	influxdbUrl string, influxdbToken string, influxdbOrgBucket string,
-	dump_interval uint32, refresh_interval uint32, minLogLevel util.MaoLogLevel, silent bool, version string) {
+	cli_dump_interval uint32, refresh_interval uint32, minLogLevel util.MaoLogLevel, silent bool, version string) {
 
 	util.InitMaoLog(minLogLevel)
 
@@ -315,7 +315,7 @@ func RunServer(
 	// ============================
 
 	if !silent {
-		go startCliOutput(dump_interval)
+		go startCliOutput(cli_dump_interval)
 	}
 
 	traceServicesForTopologyShow()

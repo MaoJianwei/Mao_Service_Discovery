@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	VERSION = "1.5"
+	VERSION = "1.6"
 )
 
 var (
@@ -26,7 +26,7 @@ var (
 	web_server_addr net.IP
 	web_server_port uint32
 
-	dump_interval uint32
+	cli_dump_interval uint32
 	refresh_interval uint32
 
 
@@ -105,14 +105,14 @@ var serverCmd = &cobra.Command{
 		//	main_server_addr,
 		//	web_server_addr,
 		//	web_server_port,
-		//	dump_interval,
+		//	cli_dump_interval,
 		//	report_interval)
 		//
 		//fmt.Printf("---\n%v, %d\n", args, len(args))
 		//return
 		branch.RunServer(&report_server_addr, report_server_port, &web_server_addr, web_server_port,
 			influxdbUrl, influxdbToken, influxdbOrgBucket,
-			dump_interval, refresh_interval, minLogLevel, silent, VERSION)
+			cli_dump_interval, refresh_interval, minLogLevel, silent, VERSION)
 	},
 }
 
@@ -126,8 +126,8 @@ Server:
 	- web_server_addr : listen on the addr, for web control
 	- web_server_port : listen on the port, for web control
 
-	- dump_interval : interval for dump all services info. (milliseconds)
-	- refresh_interval : interval for refresh the status of clients. (milliseconds)
+	- cli_dump_interval : interval for dump all services info. (milliseconds)
+	//- refresh_interval : interval for refresh the status of clients. (milliseconds)
 
 Client:
 	- report_interval : interval for report status to server. (milliseconds)
@@ -156,28 +156,28 @@ func init() {
 	serverCmd.Flags().String("web_server_addr","::","IP address for Restful server.")
 	serverCmd.Flags().Uint32("web_server_port",29999,"Port for Restful server.")
 
-	serverCmd.Flags().Uint32("dump_interval", 1000, "1000")
-	serverCmd.Flags().Uint32("refresh_interval", 1000, "1000")
+	serverCmd.Flags().Uint32("cli_dump_interval", 1000, "The interval to output all services info to the CLI, in milliseconds.")
+	//serverCmd.Flags().Uint32("refresh_interval", 1000, "The interval to refresh the status of clients, in milliseconds.")
 
-	serverCmd.Flags().String("influxdb_url","","https://domain-or-ip:port")
-	serverCmd.Flags().String("influxdb_org_bucket","","same name for Org and Bucket")
-	serverCmd.Flags().String("influxdb_token","","token string from Influxdb")
+	serverCmd.Flags().String("influxdb_url","","URL for connecting to Influxdb. (e.g. https://<domain-or-ip>:<port>) (Optional)")
+	serverCmd.Flags().String("influxdb_org_bucket","","Same name for Org and Bucket. (Optional)")
+	serverCmd.Flags().String("influxdb_token","","Token string obtained from Influxdb. (Optional)")
 
 
-	generalClientCmd.Flags().Uint32("report_interval", 1000, "1000")
+	generalClientCmd.Flags().Uint32("report_interval", 1000, "The interval to collect data and report to server, in milliseconds.")
 
-	generalClientCmd.Flags().String("influxdb_url","","https://<domain-or-ip>:<port>")
-	generalClientCmd.Flags().String("influxdb_org_bucket","","same name for Org and Bucket")
-	generalClientCmd.Flags().String("influxdb_token","","token string from Influxdb")
+	generalClientCmd.Flags().String("influxdb_url","","URL for connecting to Influxdb. (e.g. https://<domain-or-ip>:<port>) (Optional)")
+	generalClientCmd.Flags().String("influxdb_org_bucket","","Same name for Org and Bucket. (Optional)")
+	generalClientCmd.Flags().String("influxdb_token","","Token string obtained from Influxdb. (Optional)")
 
-	generalClientCmd.Flags().Bool("enable_aux_nat66_stat", false, "Enable to pull statistics of nat66 gateway. Usable only in linux with root privilege")
-	generalClientCmd.Flags().Bool("enable_aux_nat66_persistent", false, "Enable to upload nat66 stat to Influxdb")
+	generalClientCmd.Flags().Bool("enable_aux_nat66_stat", false, "Enable to pull statistics of nat66 gateway. Usable only in linux with root privilege. (default: false)")
+	generalClientCmd.Flags().Bool("enable_aux_nat66_persistent", false, "Enable to upload nat66 stat to Influxdb. (default: false)")
 
-	generalClientCmd.Flags().Bool("enable_gps_monitor", false, "Enable to read GPS data via serial port from the GPS module")
-	generalClientCmd.Flags().Bool("enable_gps_persistent", false, "Enable to upload GPS data to Influxdb")
+	generalClientCmd.Flags().Bool("enable_gps_monitor", false, "Enable to read GPS data via serial port from the GPS module. (default: false)")
+	generalClientCmd.Flags().Bool("enable_gps_persistent", false, "Enable to upload GPS data to Influxdb. (default: false)")
 
-	generalClientCmd.Flags().Bool("enable_aux_env_temp_monitor", false, "Enable to monitor environment temperature")
-	generalClientCmd.Flags().Bool("enable_aux_env_temp_persistent", false, "Enable to upload environment temperature to Influxdb")
+	generalClientCmd.Flags().Bool("enable_aux_env_temp_monitor", false, "Enable to monitor environment temperature. (default: false)")
+	generalClientCmd.Flags().Bool("enable_aux_env_temp_persistent", false, "Enable to upload environment temperature to Influxdb. (default: false)")
 }
 
 func readRootArgs(cmd *cobra.Command) error {
@@ -256,21 +256,22 @@ func readServerArgs(cmd *cobra.Command) error {
 	}
 
 
-	dump_interval, err = cmd.Flags().GetUint32("dump_interval")
+	cli_dump_interval, err = cmd.Flags().GetUint32("cli_dump_interval")
 	if err != nil {
 		return err
 	}
-	if dump_interval < 1 {
-		return errors.New("dump_interval is invalid")
+	if cli_dump_interval < 1 {
+		return errors.New("cli_dump_interval is invalid")
 	}
 
-	refresh_interval, err = cmd.Flags().GetUint32("refresh_interval")
-	if err != nil {
-		return err
-	}
-	if refresh_interval < 1 {
-		return errors.New("refresh_interval is invalid")
-	}
+	//refresh_interval, err = cmd.Flags().GetUint32("refresh_interval")
+	//if err != nil {
+	//	return err
+	//}
+	//if refresh_interval < 1 {
+	//	return errors.New("refresh_interval is invalid")
+	//}
+	refresh_interval = 1000 // deprecated and useless, this is a padding. can be deleted.
 
 	influxdbUrl, err = cmd.Flags().GetString("influxdb_url")
 	if err != nil {
