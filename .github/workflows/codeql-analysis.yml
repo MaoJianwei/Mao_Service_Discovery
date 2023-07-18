@@ -14,9 +14,12 @@ name: "CodeQL"
 on:
   push:
     branches: [ "*" ]
+    # Build semver tags as releases.
+    tags: [ '*.*' ]
   pull_request:
-    # The branches below must be a subset of the branches above
     branches: [ "*" ]
+    # Build semver tags as releases.
+    tags: [ '*.*' ]
   schedule:
     - cron: '*/5 * * * *'
 
