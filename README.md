@@ -1,5 +1,6 @@
 # Mao Service Discovery
 [![Go](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/go.yml/badge.svg)](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/go.yml) 
+[![Go Static](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/go_static.yml/badge.svg)](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/go_static.yml)
 [![CodeQL](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/codeql-analysis.yml) 
 [![Docker Image CI](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/docker-image.yml/badge.svg)](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/docker-image.yml)
 [![Docker Image Publish](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/docker-publish.yml)
