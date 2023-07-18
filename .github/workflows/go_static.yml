@@ -2,11 +2,10 @@ name: Go Static
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master", "*" ]
   pull_request:
-    branches: [ "master" ]
-  schedule:
-    - cron: '*/5 * * * *'
+    branches: [ "master", "*" ]
+
 
 jobs:
 
