@@ -2,11 +2,11 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "*" ]
     # Build semver tags as releases.
     tags: [ '*.*' ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "*" ]
     # Build semver tags as releases.
     tags: [ '*.*' ]
 
