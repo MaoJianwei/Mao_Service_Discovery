@@ -11,7 +11,11 @@ on:
     - cron: '*/5 * * * *'
   push:
     branches: [ "*" ]
-    # Publish semver tags as releases.
+    # Build semver tags as releases.
+    tags: [ '*.*' ]
+  pull_request:
+    branches: [ "*" ]
+    # Build semver tags as releases.
     tags: [ '*.*' ]
 
 env:
