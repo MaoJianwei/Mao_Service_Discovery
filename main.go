@@ -12,7 +12,9 @@ import (
 )
 
 const (
-	VERSION = "1.6"
+	GENERAL_CLIENT_VERSION = "1.6"
+	SERVER_VERSION = "1.6"
+	ROOT_VERSION_SIGNATURE = "Server: " + SERVER_VERSION + " Client: " + GENERAL_CLIENT_VERSION
 )
 
 var (
@@ -47,11 +49,11 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use: "mao-service-discovery",
+	Use: "MaoServerDiscovery",
 	Short:   "Mao-Service-Discovery, welcome to join our Github community. https://github.com/MaoJianwei/Mao_Service_Discovery",
-	Long:    "Mao-Service-Discovery:\n\nService registry & Service discovery & Service keep-alive.\n\nWelcome to join our Github community. https://github.com/MaoJianwei/MaoServiceDiscovery",
+	Long:    "Mao-Service-Discovery:\nService registry & Service discovery & Service keep-alive.\nWelcome to join our Github community. https://github.com/MaoJianwei/MaoServiceDiscovery",
 	//Example: "beijing",
-	Version: VERSION,
+	Version: ROOT_VERSION_SIGNATURE,
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := cmd.Help(); err != nil {
 			util.MaoLog(util.ERROR, "Fail to execute rootCmd.Help(): %s", err.Error())
@@ -61,10 +63,10 @@ var rootCmd = &cobra.Command{
 
 var generalClientCmd = &cobra.Command{
 	Use: "client",
-	Short:   "Mao: Run general client. For common device/server.",
-	//Long:    "Run general client. For common device/server.",
+	Short:   "Mao: Run general client. For common device, server, PC, laptop, Raspberry Pi, etc.",
+	Long:    "Mao-Service-Discovery:\nRun general client. For common device, server, PC, laptop, Raspberry Pi, etc.",
 	//Example: "a",
-	Version: VERSION,
+	Version: GENERAL_CLIENT_VERSION,
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := readGeneralClientArgs(cmd); err != nil {
 			util.MaoLog(util.ERROR, "Wrong Args for general client: %s", err.Error())
@@ -88,9 +90,9 @@ var generalClientCmd = &cobra.Command{
 var serverCmd = &cobra.Command{
 	Use: "server",
 	Short:   "Mao: Run server.",
-	//Long:    "Run general client. For common device/server.",
+	Long:    "Mao-Service-Discovery: Run server.",
 	//Example: "a",
-	Version: VERSION,
+	Version: SERVER_VERSION,
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := readServerArgs(cmd); err != nil {
 			util.MaoLog(util.ERROR, "Wrong Args for server: %s", err.Error())
@@ -112,7 +114,7 @@ var serverCmd = &cobra.Command{
 		//return
 		branch.RunServer(&report_server_addr, report_server_port, &web_server_addr, web_server_port,
 			influxdbUrl, influxdbToken, influxdbOrgBucket,
-			cli_dump_interval, refresh_interval, minLogLevel, silent, VERSION)
+			cli_dump_interval, refresh_interval, minLogLevel, silent, SERVER_VERSION)
 	},
 }
 
