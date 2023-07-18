@@ -3,8 +3,12 @@ name: Go
 on:
   push:
     branches: [ "*" ]
+    # Build semver tags as releases.
+    tags: [ '*.*' ]
   pull_request:
     branches: [ "*" ]
+    # Build semver tags as releases.
+    tags: [ '*.*' ]
   
 jobs:
 
