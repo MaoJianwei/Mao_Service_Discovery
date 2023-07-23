@@ -7,6 +7,9 @@ package Mao;
 
 service MaoServerDiscovery {
     rpc Report(stream ServerReport) returns (stream ServerResponse) {}
+
+    // server initiate the measure request
+    rpc RttMeasure(stream RttEchoResponse) returns (stream RttEchoRequest) {}
 }
 
 message ServerReport {
@@ -20,4 +23,13 @@ message ServerReport {
 message ServerResponse {
     string hostname = 1;
     string new_address = 2;
+}
+
+message RttEchoRequest {
+    uint64 seq = 1;
+}
+
+message RttEchoResponse {
+    string hostname = 1;
+    uint64 ack = 2;
 }

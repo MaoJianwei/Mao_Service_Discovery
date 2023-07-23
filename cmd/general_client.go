@@ -193,6 +193,29 @@ func readAndUpdateGpsInfo() {
 	}
 }
 
+func supportRttMeasure(rttStreamClient pb.MaoServerDiscovery_RttMeasureClient) {
+	util.MaoLogM(util.INFO, c_MODULE_NAME, "Enable RTT measure feature.")
+	for {
+		// After sending echo response, we have some time (measure interval) to get latest hostname
+		hostname, err := util.GetHostname()
+		if err != nil {
+			hostname = "Mao-Unknown"
+			util.MaoLogM(util.WARN, c_MODULE_NAME, "Fail to get hostname for RTT measure, %s", err.Error())
+		}
+
+		rttEchoRequest, err := rttStreamClient.Recv()
+		if err != nil {
+			util.MaoLogM(util.WARN, c_MODULE_NAME, "Fail to receive RTT echo request, %s", err.Error())
+			return
+		}
+		err = rttStreamClient.Send(&pb.RttEchoResponse{Ack: rttEchoRequest.GetSeq(), Hostname: hostname})
+		if err != nil {
+			util.MaoLogM(util.WARN, c_MODULE_NAME, "Fail to send RTT echo request, %s", err.Error())
+			return
+		}
+	}
+}
+
 func RunGeneralClient(report_server_addr *net.IP, report_server_port uint32, report_interval uint32, silent bool,
 	influxdbUrl string, influxdbOrgBucket string, influxdbToken string,
 	nat66Gateway bool, nat66Persistent bool,
@@ -232,12 +255,25 @@ func RunGeneralClient(report_server_addr *net.IP, report_server_port uint32, rep
 		util.MaoLogM(util.INFO, c_MODULE_NAME, "Connected.")
 
 		client := pb.NewMaoServerDiscoveryClient(connect)
-		streamClient, err := client.Report(context.Background())
+
+
+		clientCommonContext, cancelCommonContext := context.WithCancel(context.Background())
+		rttStreamClient, err := client.RttMeasure(clientCommonContext)
 		if err != nil {
-			util.MaoLogM(util.ERROR, c_MODULE_NAME, "Fail to get streamClient, %s", err.Error())
+			util.MaoLogM(util.ERROR, c_MODULE_NAME, "Fail to get rttStreamClient, %s", err.Error())
+			cancelCommonContext()
 			continue
 		}
-		util.MaoLogM(util.INFO, c_MODULE_NAME, "Got StreamClient.")
+		go supportRttMeasure(rttStreamClient)
+
+
+		reportStreamClient, err := client.Report(clientCommonContext)
+		if err != nil {
+			util.MaoLogM(util.ERROR, c_MODULE_NAME, "Fail to get reportStreamClient, %s", err.Error())
+			cancelCommonContext()
+			continue
+		}
+		util.MaoLogM(util.INFO, c_MODULE_NAME, "Got reportStreamClient.")
 
 		count := 1
 		for {
@@ -308,7 +344,7 @@ func RunGeneralClient(report_server_addr *net.IP, report_server_port uint32, rep
 				report.AuxData = string(auxDataByte)
 			}
 
-			err = streamClient.Send(report)
+			err = reportStreamClient.Send(report)
 			if err != nil {
 				util.MaoLogM(util.ERROR, c_MODULE_NAME, "Fail to report, %s", err.Error())
 				break
@@ -321,6 +357,7 @@ func RunGeneralClient(report_server_addr *net.IP, report_server_port uint32, rep
 			count++
 			time.Sleep(time.Duration(report_interval) * time.Millisecond)
 		}
+		cancelCommonContext()
 		time.Sleep(1 * time.Second)
 	}
 }

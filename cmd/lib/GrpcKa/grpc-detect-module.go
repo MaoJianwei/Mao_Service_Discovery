@@ -5,9 +5,9 @@ import (
 	"MaoServerDiscovery/cmd/lib/MaoCommon"
 	pb "MaoServerDiscovery/grpc.maojianwei.com/server/discovery/api"
 	"MaoServerDiscovery/util"
+	"errors"
 	"fmt"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 	"net"
 	"sort"
@@ -22,6 +22,7 @@ const (
 type GrpcDetectModule struct {
 	serverInfo sync.Map
 	mergeChannel chan *MaoApi.GrpcServiceNode
+	rttMergeChannel chan *MaoApi.GrpcServiceNode
 
 	server *grpc.Server
 	pb.UnimplementedMaoServerDiscoveryServer
@@ -37,15 +38,21 @@ type GrpcDetectModule struct {
 
 // implement pb.UnimplementedMaoServerDiscoveryServer
 func (g *GrpcDetectModule) Report(reportStream pb.MaoServerDiscovery_ReportServer) error {
-	util.MaoLogM(util.DEBUG, MODULE_NAME, "Triggered new report round")
+	util.MaoLogM(util.DEBUG, MODULE_NAME, "Triggered new report session")
 	ctx := reportStream.Context()
 	peerCtx, okbool := peer.FromContext(ctx)
-	peerMetadata, okbool := metadata.FromIncomingContext(ctx)
-	transportstream := grpc.ServerTransportStreamFromContext(ctx)
-	util.MaoLogM(util.INFO, MODULE_NAME, "New server comming: %s", peerCtx.Addr.String())
-	util.MaoLogM(util.DEBUG, MODULE_NAME, "\n%v\n%v\n%v", peerCtx, peerMetadata, transportstream)
 	if !okbool {
+		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to get peerCtx, @Report")
+		return errors.New("Fail to get peerCtx, @Report")
 	}
+	//peerMetadata, okbool := metadata.FromIncomingContext(ctx)
+	//if !okbool {
+	//	util.MaoLogM(util.WARN, MODULE_NAME, "Fail to get peerMetadata")
+	//	return errors.New("Fail to get peerMetadata")
+	//}
+	//transportstream := grpc.ServerTransportStreamFromContext(ctx)
+
+	util.MaoLogM(util.INFO, MODULE_NAME, "New server comming: %s", peerCtx.Addr.String())
 	_ = g.dealRecv(reportStream)
 	return nil
 }
@@ -83,6 +90,56 @@ func (g *GrpcDetectModule) dealRecv(reportStream pb.MaoServerDiscovery_ReportSer
 	}
 }
 
+
+func (g *GrpcDetectModule) RttMeasure(rttMeasureStream pb.MaoServerDiscovery_RttMeasureServer) error {
+	util.MaoLogM(util.DEBUG, MODULE_NAME, "Triggered new RTT measure session")
+	ctx := rttMeasureStream.Context()
+	peerCtx, okbool := peer.FromContext(ctx)
+	if !okbool {
+		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to get peerCtx, @RttMeasure")
+		return errors.New("Fail to get peerCtx, @RttMeasure")
+	}
+	//peerMetadata, okbool := metadata.FromIncomingContext(ctx)
+	//transportstream := grpc.ServerTransportStreamFromContext(ctx)
+
+	util.MaoLogM(util.INFO, MODULE_NAME, "New RTT measure session for %s", peerCtx.Addr.String())
+	_ = g.doRttMeasure(rttMeasureStream, peerCtx.Addr.String())
+	return nil
+}
+
+func (g *GrpcDetectModule) doRttMeasure(rttMeasureStream pb.MaoServerDiscovery_RttMeasureServer, clientAddr string) error {
+	var count uint64 = 0
+	for {
+		count++
+
+		echoRequest := pb.RttEchoRequest{Seq: count}
+		t1 := time.Now()
+		if err := rttMeasureStream.Send(&echoRequest); err != nil {
+			util.MaoLogM(util.ERROR, MODULE_NAME, "Fail to send Rtt echo request to %s, %s", clientAddr, err)
+			return err
+		}
+
+		// gRPC is based on TCP now, so we don't need to do timeout setting.
+		// And, if the TCP connection broke, Recv() will return with error.
+		echoResponse, err := rttMeasureStream.Recv()
+		if err != nil {
+			util.MaoLogM(util.ERROR, MODULE_NAME, "Fail to recv Rtt echo response from %s, %s", clientAddr, err)
+			return err
+		}
+		t2 := time.Now()
+		if echoResponse.Ack == echoRequest.Seq {
+			duration := t2.Sub(t1) // nanosecond
+			g.rttMergeChannel <- &MaoApi.GrpcServiceNode{
+				Hostname:       echoResponse.GetHostname(),
+				RttDelay:       duration,
+			}
+			util.MaoLogM(util.DEBUG, MODULE_NAME, "Calculated RTT delay %s for %s", duration.String(), echoResponse.GetHostname())
+		}
+
+		time.Sleep(1 * time.Second)
+	}
+}
+
 func (g *GrpcDetectModule) runGrpcServer(listener net.Listener) {
 	util.MaoLogM(util.INFO, MODULE_NAME, "Server running %s ...", listener.Addr().String())
 	if err := g.server.Serve(listener); err != nil {
@@ -98,6 +155,12 @@ func (g *GrpcDetectModule) controlLoop() {
 	checkTimer := time.NewTimer(time.Duration(g.checkInterval) * time.Millisecond)
 	for {
 		select {
+		case serverNode := <-g.rttMergeChannel:
+			value, ok := g.serverInfo.Load(serverNode.Hostname)
+			if ok && value != nil {
+				server := value.(*MaoApi.GrpcServiceNode)
+				server.RttDelay = serverNode.RttDelay
+			}
 		case serverNode := <-g.mergeChannel:
 			value, ok := g.serverInfo.Load(serverNode.Hostname)
 			if ok && value != nil {
@@ -114,8 +177,19 @@ func (g *GrpcDetectModule) controlLoop() {
 						})
 					}
 				}
+				server.ReportTimes = serverNode.ReportTimes
+				server.Hostname = serverNode.Hostname
+				server.Ips = serverNode.Ips
+				server.ServerDateTime = serverNode.ServerDateTime
+				server.OtherData = serverNode.OtherData
+				server.RealClientAddr = serverNode.RealClientAddr
+				server.LocalLastSeen = serverNode.LocalLastSeen
+				server.Alive = serverNode.Alive
+			} else {
+				// Attention, serverNode instance is not created always. 2023.07.24
+				// TODO: other place may need to be check.
+				g.serverInfo.Store(serverNode.Hostname, serverNode)
 			}
-			g.serverInfo.Store(serverNode.Hostname, serverNode)
 		case <-checkTimer.C:
 			// aliveness checking
 			g.serverInfo.Range(func(key, value interface{}) bool {
@@ -168,6 +242,7 @@ func (g *GrpcDetectModule) GetServiceInfo() []*MaoApi.GrpcServiceNode {
 
 func (g *GrpcDetectModule) InitGrpcModule(addrPort string) bool {
 	g.mergeChannel = make(chan *MaoApi.GrpcServiceNode, 1024)
+	g.rttMergeChannel = make(chan *MaoApi.GrpcServiceNode, 1024)
 
 	g.checkInterval = 500
 	g.leaveTimeout = 5000

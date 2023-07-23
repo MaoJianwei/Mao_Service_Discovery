@@ -23,6 +23,8 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MaoServerDiscoveryClient interface {
 	Report(ctx context.Context, opts ...grpc.CallOption) (MaoServerDiscovery_ReportClient, error)
+	// server initiate the measure request
+	RttMeasure(ctx context.Context, opts ...grpc.CallOption) (MaoServerDiscovery_RttMeasureClient, error)
 }
 
 type maoServerDiscoveryClient struct {
@@ -64,11 +66,44 @@ func (x *maoServerDiscoveryReportClient) Recv() (*ServerResponse, error) {
 	return m, nil
 }
 
+func (c *maoServerDiscoveryClient) RttMeasure(ctx context.Context, opts ...grpc.CallOption) (MaoServerDiscovery_RttMeasureClient, error) {
+	stream, err := c.cc.NewStream(ctx, &MaoServerDiscovery_ServiceDesc.Streams[1], "/Mao.MaoServerDiscovery/RttMeasure", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &maoServerDiscoveryRttMeasureClient{stream}
+	return x, nil
+}
+
+type MaoServerDiscovery_RttMeasureClient interface {
+	Send(*RttEchoResponse) error
+	Recv() (*RttEchoRequest, error)
+	grpc.ClientStream
+}
+
+type maoServerDiscoveryRttMeasureClient struct {
+	grpc.ClientStream
+}
+
+func (x *maoServerDiscoveryRttMeasureClient) Send(m *RttEchoResponse) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *maoServerDiscoveryRttMeasureClient) Recv() (*RttEchoRequest, error) {
+	m := new(RttEchoRequest)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // MaoServerDiscoveryServer is the server API for MaoServerDiscovery service.
 // All implementations must embed UnimplementedMaoServerDiscoveryServer
 // for forward compatibility
 type MaoServerDiscoveryServer interface {
 	Report(MaoServerDiscovery_ReportServer) error
+	// server initiate the measure request
+	RttMeasure(MaoServerDiscovery_RttMeasureServer) error
 	mustEmbedUnimplementedMaoServerDiscoveryServer()
 }
 
@@ -78,6 +113,9 @@ type UnimplementedMaoServerDiscoveryServer struct {
 
 func (UnimplementedMaoServerDiscoveryServer) Report(MaoServerDiscovery_ReportServer) error {
 	return status.Errorf(codes.Unimplemented, "method Report not implemented")
+}
+func (UnimplementedMaoServerDiscoveryServer) RttMeasure(MaoServerDiscovery_RttMeasureServer) error {
+	return status.Errorf(codes.Unimplemented, "method RttMeasure not implemented")
 }
 func (UnimplementedMaoServerDiscoveryServer) mustEmbedUnimplementedMaoServerDiscoveryServer() {}
 
@@ -118,6 +156,32 @@ func (x *maoServerDiscoveryReportServer) Recv() (*ServerReport, error) {
 	return m, nil
 }
 
+func _MaoServerDiscovery_RttMeasure_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(MaoServerDiscoveryServer).RttMeasure(&maoServerDiscoveryRttMeasureServer{stream})
+}
+
+type MaoServerDiscovery_RttMeasureServer interface {
+	Send(*RttEchoRequest) error
+	Recv() (*RttEchoResponse, error)
+	grpc.ServerStream
+}
+
+type maoServerDiscoveryRttMeasureServer struct {
+	grpc.ServerStream
+}
+
+func (x *maoServerDiscoveryRttMeasureServer) Send(m *RttEchoRequest) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *maoServerDiscoveryRttMeasureServer) Recv() (*RttEchoResponse, error) {
+	m := new(RttEchoResponse)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // MaoServerDiscovery_ServiceDesc is the grpc.ServiceDesc for MaoServerDiscovery service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -129,6 +193,12 @@ var MaoServerDiscovery_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "Report",
 			Handler:       _MaoServerDiscovery_Report_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "RttMeasure",
+			Handler:       _MaoServerDiscovery_RttMeasure_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},
