@@ -15,7 +15,7 @@ type MaoIcmpService struct {
 	DetectCount uint64
 	ReportCount uint64
 
-	RttDuration          int64
+	RttDuration          time.Duration
 	RttOutboundTimestamp time.Time
 }
 

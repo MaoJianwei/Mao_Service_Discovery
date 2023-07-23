@@ -168,7 +168,7 @@ func (m *IcmpDetectModule) receiveProcessIcmpLoop(protoNum int, conn *icmp.Packe
 		if ok && value != nil {
 			service := value.(*MaoApi.MaoIcmpService)
 			service.LastSeen = lastseen
-			service.RttDuration = service.LastSeen.Sub(service.RttOutboundTimestamp).Nanoseconds()
+			service.RttDuration = service.LastSeen.Sub(service.RttOutboundTimestamp)
 			service.ReportCount++
 
 			if !service.Alive {

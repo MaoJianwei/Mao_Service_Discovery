@@ -43,7 +43,7 @@
             services += "<td>" + (item["DetectCount"]!=null?item["DetectCount"]:"/") + "</td>"
             services += "<td>" + (item["ReportCount"]!=null?item["ReportCount"]:item["ReportTimes"]) + "</td>"
             services += "<td>" + (item["LastSeen"]!=null?item["LastSeen"]:item['LocalLastSeen']) + "</td>"
-            services += "<td>" + (item["RttDuration"]!=null?item["RttDuration"]:"/") + "</td>"
+            services += "<td>" + (item["RttDuration"]!=null?(item["RttDuration"] / 1000 / 1000).toFixed(3)+"ms":"/") + "</td>"
             services += "<td>" + (item["RttOutboundTimestamp"]!=null?item["RttOutboundTimestamp"]:item["ServerDateTime"]) + "</td>"
             services += "<td>" + (item["OtherData"]!=null?item["OtherData"]:"/") + "</td>"
             services += "</tr>"

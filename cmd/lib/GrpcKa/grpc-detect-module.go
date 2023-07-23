@@ -130,8 +130,8 @@ func (g *GrpcDetectModule) doRttMeasure(rttMeasureStream pb.MaoServerDiscovery_R
 		if echoResponse.Ack == echoRequest.Seq {
 			duration := t2.Sub(t1) // nanosecond
 			g.rttMergeChannel <- &MaoApi.GrpcServiceNode{
-				Hostname:       echoResponse.GetHostname(),
-				RttDelay:       duration,
+				Hostname:    echoResponse.GetHostname(),
+				RttDuration: duration,
 			}
 			util.MaoLogM(util.DEBUG, MODULE_NAME, "Calculated RTT delay %s for %s", duration.String(), echoResponse.GetHostname())
 		}
@@ -159,7 +159,7 @@ func (g *GrpcDetectModule) controlLoop() {
 			value, ok := g.serverInfo.Load(serverNode.Hostname)
 			if ok && value != nil {
 				server := value.(*MaoApi.GrpcServiceNode)
-				server.RttDelay = serverNode.RttDelay
+				server.RttDuration = serverNode.RttDuration
 			}
 		case serverNode := <-g.mergeChannel:
 			value, ok := g.serverInfo.Load(serverNode.Hostname)

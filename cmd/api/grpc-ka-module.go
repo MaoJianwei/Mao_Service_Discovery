@@ -21,7 +21,7 @@ type GrpcServiceNode struct {
 	LocalLastSeen  time.Time
 	Alive bool
 
-	RttDelay time.Duration // nanosecond, uint64
+	RttDuration time.Duration // nanosecond, uint64
 }
 
 type GrpcKaModule interface {

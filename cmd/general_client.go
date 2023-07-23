@@ -193,7 +193,7 @@ func readAndUpdateGpsInfo() {
 	}
 }
 
-func supportRttMeasure(rttStreamClient pb.MaoServerDiscovery_RttMeasureClient) {
+func supportRttMeasure(rttStreamClient pb.MaoServerDiscovery_RttMeasureClient, silent bool) {
 	util.MaoLogM(util.INFO, c_MODULE_NAME, "Enable RTT measure feature.")
 	for {
 		// After sending echo response, we have some time (measure interval) to get latest hostname
@@ -212,6 +212,9 @@ func supportRttMeasure(rttStreamClient pb.MaoServerDiscovery_RttMeasureClient) {
 		if err != nil {
 			util.MaoLogM(util.WARN, c_MODULE_NAME, "Fail to send RTT echo request, %s", err.Error())
 			return
+		}
+		if silent == false {
+			util.MaoLogM(util.INFO, c_MODULE_NAME, "RTT Measure: sent echo response with ack %d", rttEchoRequest.GetSeq())
 		}
 	}
 }
@@ -264,7 +267,7 @@ func RunGeneralClient(report_server_addr *net.IP, report_server_port uint32, rep
 			cancelCommonContext()
 			continue
 		}
-		go supportRttMeasure(rttStreamClient)
+		go supportRttMeasure(rttStreamClient, silent)
 
 
 		reportStreamClient, err := client.Report(clientCommonContext)
