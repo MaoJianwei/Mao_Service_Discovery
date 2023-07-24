@@ -23,7 +23,7 @@
     "etcdv3",
     "icmpv6",
     "icmp-ping",
-    "grpc-ping",
+    "grpc-ping"
   ],
   "author": "Jianwei Mao",
   "license": "Apache-2.0",
