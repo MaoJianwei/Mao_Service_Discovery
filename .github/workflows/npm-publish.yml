@@ -10,22 +10,7 @@ on:
     tags: [ '*.*' ]
     
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 16
-      - name: Set up Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: '1.20.6'
-      - run: ./statically_linked_compilation.sh
-      - run: go test -v ./...
-
   publish-npm:
-    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -33,6 +18,12 @@ jobs:
         with:
           node-version: 16
           registry-url: https://registry.npmjs.org/
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.20.6'
+      - run: ./statically_linked_compilation.sh
+      - run: go test -v ./...
       - run: git config --global user.email "maojianwei2016@126.com"
       - run: git config --global user.name "Jianwei Mao"
       - run: npm version prerelease --preid commit-`date "+%Y-%m-%d-%H-%M-%S"`
