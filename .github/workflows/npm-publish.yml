@@ -6,7 +6,11 @@ name: Node.js Package
 on:
   release:
     types: [created]
-
+  push:
+    branches: [ "*" ]
+    # Build semver tags as releases.
+    tags: [ '*.*' ]
+    
 jobs:
   build:
     runs-on: ubuntu-latest
