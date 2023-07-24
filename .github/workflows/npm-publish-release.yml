@@ -6,6 +6,8 @@ name: Node.js Package Publish (Release)
 on:
   release:
     types: [created]
+  push:
+    tags: [ '*.*' ]
     
 jobs:
   publish-npm:
