@@ -28,6 +28,7 @@ jobs:
       - run: cd ./.npm-release-binary/
       - run: git config --global user.email "maojianwei2016@126.com"
       - run: git config --global user.name "Jianwei Mao"
+      - run: pwd
       - run: npm version prerelease --preid commit-`date "+%Y-%m-%d-%H-%M-%S"`
       - run: npm publish
         env:
