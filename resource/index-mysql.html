@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<!--enctype="application/json"-->
+<form action="/addMysqlInfo" method="post">
+    Username :<br/>
+    <textarea rows="1" cols="50" name="username" id="username"></textarea><br/>
+    Password :<br/>
+    <textarea rows="1" cols="50" name="password" id="password"></textarea><br/>
+    MYSQL Server address (e.g. mysql.mao.com) :<br/>
+    <textarea rows="1" cols="50" name="mysqlServerAddr" id="mysqlServerAddr"></textarea><br/>
+    MYSQL Server port (e.g. 3306) :<br/>
+    <textarea rows="1" cols="50" name="mysqlServerPort" id="mysqlServerPort"></textarea><br/>
+    Database Name :<br/>
+    <textarea rows="1" cols="50" name="databaseName" id="databaseName"></textarea><br/>
+    <input type="submit" value="Add" />
+</form>
+<br/>
+<br/>
+<script src="/static/jquery-3.6.0.min.js" type="text/javascript"></script>
+<script>
+    $.get("/getMysqlInfo",function (response, status, xhr) {
+        $("#username").text(response['username']!=null?response['username']:"N/A")
+        $("#password").text(" --- --- ")
+        $("#mysqlServerAddr").text(response['mysqlServerAddr']!=null?response['mysqlServerAddr']:"N/A")
+        $("#mysqlServerPort").text(response['mysqlServerPort']!=null?response['mysqlServerPort']:"N/A")
+        $("#databaseName").text(response['databaseName']!=null?response['databaseName']:"N/A")
+    })
+</script>
+
+</body>
+</html>

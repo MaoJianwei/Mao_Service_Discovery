@@ -11,6 +11,7 @@ import (
 	"MaoServerDiscovery/cmd/lib/MaoCommon"
 	"MaoServerDiscovery/cmd/lib/Restful"
 	"MaoServerDiscovery/cmd/lib/Soap"
+	MaoDatabase "MaoServerDiscovery/incubator/Database"
 	"MaoServerDiscovery/incubator/OnosTopoShow"
 	"MaoServerDiscovery/util"
 	parent "MaoServerDiscovery/util"
@@ -263,6 +264,12 @@ func RunServer(
 	MaoCommon.RegisterService(MaoApi.EmailModuleRegisterName, smtpEmailModule)
 	// ============================
 
+	// ====== MYSQL SYNC module ======
+	mysqlSyncModule := &MaoDatabase.MysqlDataPublisher{}
+	if !mysqlSyncModule.InitMysqlDataPublisher() {
+		return
+	}
+	// ============================
 
 	// ====== Wechat Message module ======
 	//wechatMessageModule := &Wechat.WechatMessageModule{}
