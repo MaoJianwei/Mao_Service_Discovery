@@ -17,6 +17,15 @@ const (
 	ROOT_VERSION_SIGNATURE = "Server: " + SERVER_VERSION + " Client: " + GENERAL_CLIENT_VERSION
 )
 
+/*
+	Steps to add a new parameter:
+	1. Add a global variant
+	2. Register the parameter and some introductions in the init()
+	3. Add a reader and some checking rules of the parameter in something like readServerArgs()
+	4. Add the global variant in the module entry like branch.RunServer()
+	5. Add some introductions for the parameter before the init()
+ */
+
 var (
 	//main_server_addr net.IP
 	report_server_addr net.IP
