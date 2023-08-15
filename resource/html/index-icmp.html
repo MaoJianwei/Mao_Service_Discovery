@@ -21,7 +21,7 @@
         services += "<table border=\"1\"><tr><th>Service IP</th><th>Alive</th><th>DetectCount</th><th>ReportCount</th><th>LastSeen</th><th>RttDuration</th><th>RttOutboundTimestamp</th></tr>"
 
         $.each(response, function(index, item) {
-            services += "<tr><td><form action=\"/delServiceIp\" method=\"post\">"
+            services += "<tr><td><form action=\"/api/delServiceIp\" method=\"post\">"
             services += "<input type=\"submit\" value=\"Delete\" />"
             services += "<input type=\"text\" name='ipv4v6' style='width:280px' readonly value='" + item["Address"] + "'/></form></td>"
             services += "<td>" + item["Alive"] + "</td>"
