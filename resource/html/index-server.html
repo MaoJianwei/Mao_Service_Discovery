@@ -21,7 +21,7 @@
         services += "<table border=\"1\"><tr><th>Service IP</th><th>Report IP</th><th>Alive</th><th>DetectCount</th><th>ReportCount</th><th>LastSeen</th><th>RttDuration</th><th>RttOutboundTimestamp/RemoteTimestamp</th><th>OtherData</th></tr>"
 
         $.each(response, function(index, item) {
-            services += "<tr><td><form action=\"/delServiceIp\" method=\"post\">"
+            services += "<tr><td><form action=\"/api/delServiceIp\" method=\"post\">"
             if (item['Address'] == null) {
                 services += "<input type=\"submit\" value=\"Delete\" disabled/>"
             } else {
