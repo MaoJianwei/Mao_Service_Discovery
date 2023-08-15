@@ -243,7 +243,7 @@ func processServiceIp(c *gin.Context) {
 		for _, s := range v4IpArr {
 			ip := net.ParseIP(s)
 			if ip != nil {
-				if c.FullPath() == URL_CONFIG_ADD_SERVICE_IP {
+				if strings.Contains(c.FullPath(), URL_CONFIG_ADD_SERVICE_IP) {
 					addServiceChan <- s
 				} else {
 					delServiceChan <- s

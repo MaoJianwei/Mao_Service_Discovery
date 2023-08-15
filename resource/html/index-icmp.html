@@ -6,7 +6,7 @@
 </head>
 <body>
 <!--enctype="application/json"-->
-<form action="/addServiceIp" method="post">
+<form action="/api/addServiceIp" method="post">
     New Services<br/>
     <textarea rows="6" cols="50" name="ipv4v6"></textarea><br/>
     <input type="submit" value="Add" />
@@ -16,7 +16,7 @@
 <div id="services"></div>
 <script src="/static/jquery-3.6.0.min.js" type="text/javascript"></script>
 <script>
-    $.get("/showServiceIP",function (response, status, xhr) {
+    $.get("/api/showServiceIP",function (response, status, xhr) {
         services = "Services " + response.length + "<br/>"
         services += "<table border=\"1\"><tr><th>Service IP</th><th>Alive</th><th>DetectCount</th><th>ReportCount</th><th>LastSeen</th><th>RttDuration</th><th>RttOutboundTimestamp</th></tr>"
 

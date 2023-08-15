@@ -493,7 +493,7 @@ func (m *IcmpDetectModule) processServiceIp(c *gin.Context) {
 	if ok {
 		v4IpArr := strings.Fields(v4Ip)
 		for _, s := range v4IpArr {
-			if c.FullPath() == URL_CONFIG_ADD_SERVICE_IP {
+			if strings.Contains(c.FullPath(), URL_CONFIG_ADD_SERVICE_IP) {
 				m.AddService(s)
 			} else {
 				m.DelService(s)

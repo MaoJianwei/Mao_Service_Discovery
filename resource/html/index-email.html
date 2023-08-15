@@ -6,15 +6,17 @@
 </head>
 <body>
 <!--enctype="application/json"-->
-<form action="/addWechatInfo" method="post">
-    CorpId :<br/>
-    <textarea rows="1" cols="50" name="corpId" id="corpId"></textarea><br/>
-    AgentId :<br/>
-    <textarea rows="1" cols="50" name="agentId" id="agentId"></textarea><br/>
-    AgentSecret :<br/>
-    <textarea rows="1" cols="50" name="agentSecret" id="agentSecret"></textarea><br/>
-    Global Receivers (one line, one receiver) :<br/>
-    <textarea rows="10" cols="50" name="globalReceivers" id="globalReceivers"></textarea><br/>
+<form action="/api/addEmailInfo" method="post">
+    Username :<br/>
+    <textarea rows="1" cols="50" name="username" id="username"></textarea><br/>
+    Password :<br/>
+    <textarea rows="1" cols="50" name="password" id="password"></textarea><br/>
+    SMTP Server address and port (e.g. smtp.mao.com:25) :<br/>
+    <textarea rows="1" cols="50" name="smtpServerAddrPort" id="smtpServerAddrPort"></textarea><br/>
+    Sender Email :<br/>
+    <textarea rows="1" cols="50" name="sender" id="sender"></textarea><br/>
+    Receiver Emails (one line, one receiver) :<br/>
+    <textarea rows="10" cols="50" name="receiver" id="receiver"></textarea><br/>
     <input type="submit" value="Add" />
 </form>
 <br/>
@@ -23,7 +25,7 @@
 <!--<div id="EmailInfoDiv"></div>-->
 <script src="/static/jquery-3.6.0.min.js" type="text/javascript"></script>
 <script>
-    $.get("/getWechatInfo",function (response, status, xhr) {
+    $.get("/api/getEmailInfo",function (response, status, xhr) {
 
         // emailInfo = "<table border=\"1\">"
         // emailInfo += "<tr><td>" + "Username" + "</td>"
@@ -47,16 +49,17 @@
         // $("#EmailInfoDiv").html(emailInfo)
 
 
-        globalReceivers = ""
-        if (response['globalReceivers'] != null) {
-            response['globalReceivers'].forEach( r => {
-                globalReceivers += r + "\r\n"
+        receivers = ""
+        if (response['receiver'] != null) {
+            response['receiver'].forEach( r => {
+                receivers += r + "\r\n"
             })
         }
-        $("#corpId").text(response['corpId']!=null?response['corpId']:"N/A")
-        $("#agentId").text(response['agentId']!=null?response['agentId']:"N/A")
-        $("#agentSecret").text(" --- --- ")
-        $("#globalReceivers").text(globalReceivers)
+        $("#username").text(response['username']!=null?response['username']:"N/A")
+        $("#password").text(" --- --- ")
+        $("#smtpServerAddrPort").text(response['smtpServerAddrPort']!=null?response['smtpServerAddrPort']:"N/A")
+        $("#sender").text(response['sender']!=null?response['sender']:"N/A")
+        $("#receiver").text(receivers)
     })
 </script>
 

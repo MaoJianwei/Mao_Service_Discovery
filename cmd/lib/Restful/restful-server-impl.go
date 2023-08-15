@@ -24,27 +24,36 @@ func (r *RestfulServerImpl) InitRestfulServer() {
 	gin.SetMode(gin.ReleaseMode)
 	r.restful = gin.Default()
 
-	r.restful.LoadHTMLGlob("resource/*")
-	r.restful.Static("/static/", "resource")
+	r.restful.LoadHTMLGlob("resource/html/*")
+	r.restful.Static("/js", "resource/static/js")
+	r.restful.Static("/css", "resource/static/css")
+	r.restful.Static("/static", "resource/static")
+	r.restful.StaticFile("/favicon.ico", "resource/static/favicon.ico")
 
-	r.restful.GET("/", r.showApiListPage)
+
+	r.restful.GET("/", r.showHomePage)
+	r.restful.GET("/api", r.showApiListPage)
 
 	// not need to initiate []string
 }
 
+func (r *RestfulServerImpl) showHomePage(c *gin.Context) {
+	c.HTML(200, "index.html", nil)
+}
+
 func (r *RestfulServerImpl) RegisterUiPage(relativePath string, handlers ...gin.HandlerFunc) {
-	r.restful.GET(relativePath, handlers...)
-	r.uiPageLinks = append(r.uiPageLinks, relativePath)
+	r.restful.GET("/v1" + relativePath, handlers...)
+	r.uiPageLinks = append(r.uiPageLinks, "/v1" + relativePath)
 }
 
 func (r *RestfulServerImpl) RegisterGetApi(relativePath string, handlers ...gin.HandlerFunc) {
-	r.restful.GET(relativePath, handlers...)
-	r.getApiLinks = append(r.getApiLinks, relativePath)
+	r.restful.GET("/api" + relativePath, handlers...)
+	r.getApiLinks = append(r.getApiLinks, "/api" + relativePath)
 }
 
 func (r *RestfulServerImpl) RegisterPostApi(relativePath string, handlers ...gin.HandlerFunc) {
-	r.restful.POST(relativePath, handlers...)
-	r.postApiLinks = append(r.postApiLinks, relativePath)
+	r.restful.POST("/api" + relativePath, handlers...)
+	r.postApiLinks = append(r.postApiLinks, "/api" + relativePath)
 }
 
 func (r *RestfulServerImpl) showApiListPage(c *gin.Context) {
