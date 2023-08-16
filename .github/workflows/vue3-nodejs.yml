@@ -31,4 +31,7 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
         cache-dependency-path: ./webui/package-lock.json
-    - run: ./build_webui.sh
+    - run: npm install
+      working-directory: ./webui/
+    - run: npm run build
+      working-directory: ./webui/
