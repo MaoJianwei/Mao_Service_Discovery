@@ -1,4 +1,4 @@
-FROM golang:1.20.6 as builder
+FROM golang:1.21.0 as golang_builder
 MAINTAINER Jianwei Mao <maojianwei2012@126.com>
 
 WORKDIR /
@@ -6,13 +6,23 @@ WORKDIR /
 COPY "./" "/"
 RUN /statically_linked_compilation.sh
 
+
+FROM node:18.17.1 as webui_builder
+MAINTAINER Jianwei Mao <maojianwei2012@126.com>
+
+WORKDIR /
+
+COPY "./" "/"
+RUN /build_webui.sh
+
+
 FROM scratch as product
 MAINTAINER Jianwei Mao <maojianwei2012@126.com>
 
 WORKDIR /
 
-COPY "resource" "/resource/"
-COPY --from=builder "/MaoServerDiscovery" "/"
+COPY --from=webui_builder "/resource/" "/resource/"
+COPY --from=golang_builder "/MaoServerDiscovery" "/"
 
 EXPOSE 28888 29999
 
