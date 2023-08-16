@@ -26,6 +26,9 @@ jobs:
         
       - name: Golang Test
         run: go test -v ./...
+
+      - run: ./build_webui.sh
+      
       - run: mv ./MaoServerDiscovery ./.npm-release-binary/
       - run: cp -vrf ./resource/ ./.npm-release-binary/
       
