@@ -120,13 +120,15 @@ func (o *OnosTopoModule) processOnosInfo(c *gin.Context) {
 	} else {
 		data := make(map[string]interface{})
 		data["addrPort"] = o.addrPort
-		data["ADD_DEVICE_API"] = o.ADD_DEVICE_API
-		data["REMOVE_DEVICE_API"] = o.REMOVE_DEVICE_API
-		data["DELETE_DEVICE_API"] = o.DELETE_DEVICE_API
-		data["ADD_LINK_API"] = o.ADD_LINK_API
-		data["REMOVE_LINK_API"] = o.REMOVE_LINK_API
-
 		configModule.PutConfig(ONOS_CONFIG_PATH, data)
+
+		apiData := make(map[string]interface{})
+		apiData["ADD_DEVICE_API"] = o.ADD_DEVICE_API
+		apiData["REMOVE_DEVICE_API"] = o.REMOVE_DEVICE_API
+		apiData["DELETE_DEVICE_API"] = o.DELETE_DEVICE_API
+		apiData["ADD_LINK_API"] = o.ADD_LINK_API
+		apiData["REMOVE_LINK_API"] = o.REMOVE_LINK_API
+		configModule.PutConfig(ONOS_API_CONFIG_PATH, apiData)
 	}
 
 	o.showOnosPage(c)
