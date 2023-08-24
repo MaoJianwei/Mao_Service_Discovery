@@ -2,6 +2,7 @@ package Email
 
 import (
 	MaoApi "MaoServerDiscovery/cmd/api"
+	"MaoServerDiscovery/cmd/lib/Config"
 	"MaoServerDiscovery/cmd/lib/MaoCommon"
 	"MaoServerDiscovery/cmd/lib/MaoEnhancedGolang"
 	"MaoServerDiscovery/util"
@@ -22,6 +23,17 @@ const (
 	EMAIL_INFO_CONFIG_PATH = "/email"
 
 	SUBJECT_FIX_PREFIX = "MaoReport: "
+
+	EMAIL_CONFIG_KEY_USERNAME = "username"
+	EMAIL_CONFIG_KEY_SERVER_ADDRPORT = "smtpServerAddrPort"
+	EMAIL_CONFIG_KEY_SENDER = "sender"
+	EMAIL_CONFIG_KEY_RECEIVER = "receiver"
+
+	EMAIL_API_KEY_USERNAME = EMAIL_CONFIG_KEY_USERNAME
+	EMAIL_API_KEY_PASSWORD = "password"
+	EMAIL_API_KEY_SERVER_ADDRPORT = EMAIL_CONFIG_KEY_SERVER_ADDRPORT
+	EMAIL_API_KEY_SENDER = EMAIL_CONFIG_KEY_SENDER
+	EMAIL_API_KEY_RECEIVER = EMAIL_CONFIG_KEY_RECEIVER
 )
 
 type SmtpEmailModule struct {
@@ -147,12 +159,74 @@ func (s *SmtpEmailModule) InitSmtpEmailModule() bool {
 	s.sendEmailChannel = make(chan *MaoApi.EmailMessage, 1024)
 	s.needShutdown = false
 
+	s.loadEmailConfig()
+
 	go s.sendEmailLoop()
 
 	s.configRestControlInterface()
 
 	return true
 }
+
+func (s *SmtpEmailModule) loadEmailConfig() {
+	configModule := MaoCommon.ServiceRegistryGetConfigModule()
+	if configModule == nil {
+		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to get config module instance")
+		return
+	}
+
+	emailConfig, errCode := configModule.GetConfig(EMAIL_INFO_CONFIG_PATH)
+	if errCode != Config.ERR_CODE_SUCCESS {
+		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to read email config, code: %d, %v", errCode, errCode)
+		return
+	}
+	if emailConfig == nil {
+		util.MaoLogM(util.WARN, MODULE_NAME, "There is no email config. You may need to config email module.")
+		return
+	}
+
+	emailConfigMap, ok := emailConfig.(map[string]interface{})
+	if !ok {
+		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to parse email config, can't convert to map[interface{}]interface{}")
+		return
+	}
+
+	username, ok := emailConfigMap[EMAIL_CONFIG_KEY_USERNAME].(string)
+	if !ok {
+		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to parse email config - username")
+		return
+	}
+	smtpServerAddrPort, ok := emailConfigMap[EMAIL_CONFIG_KEY_SERVER_ADDRPORT].(string)
+	if !ok {
+		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to parse email config - smtpServerAddrPort")
+		return
+	}
+	sender, ok := emailConfigMap[EMAIL_CONFIG_KEY_SENDER].(string)
+	if !ok {
+		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to parse email config - sender")
+		return
+	}
+	receiverIntfs, ok := emailConfigMap[EMAIL_CONFIG_KEY_RECEIVER].([]interface{})
+	if !ok {
+		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to parse email config - receiver")
+		return
+	}
+	receivers := make([]string, 0)
+	for _, receiverIntf := range receiverIntfs {
+		if r, ok := receiverIntf.(string); ok {
+			receivers = append(receivers, r)
+		} else {
+			util.MaoLogM(util.WARN, MODULE_NAME, "Fail to parse email config - receiverIntf")
+			return
+		}
+	}
+
+	s.username = username
+	s.smtpServerAddrPort = smtpServerAddrPort
+	s.sender = sender
+	s.receiver = receivers
+}
+
 
 func (s *SmtpEmailModule) configRestControlInterface() {
 	restfulServer := MaoCommon.ServiceRegistryGetRestfulServerModule()
@@ -172,10 +246,10 @@ func (s *SmtpEmailModule) showEmailPage(c *gin.Context) {
 
 func (s *SmtpEmailModule) showEmailInfo(c *gin.Context) {
 	data := make(map[string]interface{})
-	data["username"] = s.username
-	data["smtpServerAddrPort"] = s.smtpServerAddrPort
-	data["sender"] = s.sender
-	data["receiver"] = s.receiver
+	data[EMAIL_CONFIG_KEY_USERNAME] = s.username
+	data[EMAIL_CONFIG_KEY_SERVER_ADDRPORT] = s.smtpServerAddrPort
+	data[EMAIL_CONFIG_KEY_SENDER] = s.sender
+	data[EMAIL_CONFIG_KEY_RECEIVER] = s.receiver
 
 	// Attention: password can't be outputted !!!
 	c.JSON(200, data)
@@ -185,27 +259,27 @@ func (s *SmtpEmailModule) processEmailInfo(c *gin.Context) {
 
 	// TODO: check email address, limit the length of username/password/email. Prevent injection attack
 
-	username, ok := c.GetPostForm("username")
+	username, ok := c.GetPostForm(EMAIL_API_KEY_USERNAME)
 	if ok {
 		s.username = username
 	}
 
-	password, ok := c.GetPostForm("password")
+	password, ok := c.GetPostForm(EMAIL_API_KEY_PASSWORD)
 	if ok {
 		s.password = password
 	}
 
-	smtpServerAddrPort, ok := c.GetPostForm("smtpServerAddrPort")
+	smtpServerAddrPort, ok := c.GetPostForm(EMAIL_CONFIG_KEY_SERVER_ADDRPORT)
 	if ok {
 		s.smtpServerAddrPort = smtpServerAddrPort
 	}
 
-	sender, ok := c.GetPostForm("sender")
+	sender, ok := c.GetPostForm(EMAIL_CONFIG_KEY_SENDER)
 	if ok {
 		s.sender = sender
 	}
 
-	receiverStr, ok := c.GetPostForm("receiver")
+	receiverStr, ok := c.GetPostForm(EMAIL_CONFIG_KEY_RECEIVER)
 	if ok {
 		receivers := strings.Fields(receiverStr)
 		s.receiver = receivers
@@ -216,10 +290,10 @@ func (s *SmtpEmailModule) processEmailInfo(c *gin.Context) {
 		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to get config module instance, can't save email info")
 	} else {
 		data := make(map[string]interface{})
-		data["username"] = s.username
-		data["smtpServerAddrPort"] = s.smtpServerAddrPort
-		data["sender"] = s.sender
-		data["receiver"] = s.receiver
+		data[EMAIL_CONFIG_KEY_USERNAME] = s.username
+		data[EMAIL_CONFIG_KEY_SERVER_ADDRPORT] = s.smtpServerAddrPort
+		data[EMAIL_CONFIG_KEY_SENDER] = s.sender
+		data[EMAIL_CONFIG_KEY_RECEIVER] = s.receiver
 
 		// Attention: password can't be outputted !!!
 		configModule.PutConfig(EMAIL_INFO_CONFIG_PATH, data)
