@@ -518,28 +518,3 @@ func (m *IcmpDetectModule) configRestControlInterface() {
 	restfulServer.RegisterPostApi(URL_CONFIG_ADD_SERVICE_IP, m.processServiceIp)
 	restfulServer.RegisterPostApi(URL_CONFIG_DEL_SERVICE_IP, m.processServiceIp)
 }
-
-//func main() {
-//	addServiceChan = make(chan string, 50)
-//	delServiceChan = make(chan string, 50)
-//
-//	icmpDetectModule := &IcmpDetectModule{
-//		AddChan:     &addServiceChan,
-//		DelChan:     &delServiceChan,
-//		ControlPort: 2468,
-//	}
-//
-//	icmpDetectModule.InitIcmpModule()
-//
-//	go runRestControlInterface(icmpDetectModule.ControlPort)
-//
-//	for {
-//		time.Sleep(1 * time.Second)
-//		newConfigService := []*MaoIcmpService{}
-//		icmpDetectModule.serviceStore.Range(func(_, value interface{}) bool {
-//			newConfigService = append(newConfigService, value.(*MaoIcmpService))
-//			return true
-//		})
-//		serviceMirror = newConfigService
-//	}
-//}
