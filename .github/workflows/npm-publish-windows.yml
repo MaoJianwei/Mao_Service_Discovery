@@ -19,7 +19,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '$MAO_GO_VERSION'
+          go-version: $MAO_GO_VERSION
 
       - name: Golang Build
         run: ./statically_linked_compilation.sh
