@@ -12,7 +12,7 @@ module.exports = defineConfig({
         changeOrigin: true,             //是否跨域
         secure: false,                   //是否https接口
         pathRewrite: {                  //路径重置
-          '^/api': ''
+          // '^/api': ''
         }
       }
     }
