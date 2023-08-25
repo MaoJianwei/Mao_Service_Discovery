@@ -27,6 +27,7 @@ jobs:
 
     - name: Build
       run: ./statically_linked_compilation.sh
+      shell: bash
 
     - name: Test
       run: go test -v ./...
