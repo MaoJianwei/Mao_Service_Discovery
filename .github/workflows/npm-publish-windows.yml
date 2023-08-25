@@ -37,8 +37,6 @@ jobs:
         working-directory: ./webui/
         run: npm run build
         
-      - run: cd ./dist/
-
       - name: mv ../../resource/static/css/ ../../
         working-directory: ./webui/dist/
         run: mv ../../resource/static/css/ ../../
@@ -62,8 +60,6 @@ jobs:
       - name: mv ./js/ ../../resource/static/
         working-directory: ./webui/dist/
         run: mv ./js/ ../../resource/static/
-
-      - run: cd ../../
 
       - run: dir
       
