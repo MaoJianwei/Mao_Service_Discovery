@@ -28,5 +28,7 @@ jobs:
     - name: Build
       run: go build -v -a ./...
 
+    - run: dir
+
     - name: Test
       run: go test -v ./...
