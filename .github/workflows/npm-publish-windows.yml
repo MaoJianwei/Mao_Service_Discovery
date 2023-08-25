@@ -27,7 +27,7 @@ jobs:
       - run: dir
       
       - name: Golang Test
-        run: go test -v
+        run: go test -v ./...
         
       - name: npm install
         working-directory: ./webui/
