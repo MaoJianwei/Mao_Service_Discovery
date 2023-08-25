@@ -37,7 +37,7 @@ jobs:
       - run: dir
       
       - run: mv ./MaoServerDiscovery ./.npm-release-binary/
-      - run: cp -vrf ./resource/ ./.npm-release-binary/
+      - run: mv ./resource/ ./.npm-release-binary/
       
       - run: git config --global user.email "maojianwei2016@126.com"
       - run: git config --global user.name "Jianwei Mao"
