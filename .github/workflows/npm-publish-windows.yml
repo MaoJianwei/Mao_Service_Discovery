@@ -23,6 +23,8 @@ jobs:
 
       - name: Golang Build
         run: go build -v -a ./...
+
+      - run: dir
       
       - name: Golang Test
         run: go test -v ./...
