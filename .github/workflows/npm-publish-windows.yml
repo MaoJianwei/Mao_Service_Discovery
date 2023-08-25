@@ -29,7 +29,20 @@ jobs:
       - name: Golang Test
         run: go test -v
         
-      - run: ./build_webui.sh
+      - run: cd ./webui/
+      - run: npm install
+      - run: npm run build
+      - run: cd ./dist/
+
+      - run: dir
+      - run: mv ../../resource/static/css/ ../../
+      - run: mv ../../resource/static/js/ ../../
+      - run: mv favicon.ico ../../resource/static/
+      - run: mv index.html ../../resource/html/
+      - run: mv ./css/ ../../resource/static/
+      - run: mv ./js/ ../../resource/static/
+
+      - run: cd ../../
 
       - run: dir
       
