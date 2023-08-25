@@ -1,8 +1,0 @@
-"encoding/binary"
-https://studygolang.com/articles/3350
-
-"golang.org/x/net/icmp"
-
-binary.BigEndian.PutUint16(b[:2], uint16(p.ID))
-
-icmpMsgByte, err := icmpMsg.Marshal
