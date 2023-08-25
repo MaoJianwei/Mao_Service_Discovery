@@ -30,6 +30,12 @@ jobs:
 
     - name: Build
       run: go build -v ./...
+      shell: bash
+
+    - name: Show Build Result
+      run: ls -al
+      shell: bash
 
     - name: Test
       run: go test -v ./...
+      shell: bash
