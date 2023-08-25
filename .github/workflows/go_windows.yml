@@ -14,16 +14,29 @@ on:
     tags: [ '*.*' ]
 
 jobs:
-
+  go-versions:
+    name: Lookup Go versions
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.versions.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: arnested/go-version-action@v1
+        id: versions
   build:
     runs-on: windows-latest
+    needs: go-versions
+    strategy:
+      matrix:
+        version: ${{ fromJSON(needs.go-versions.outputs.matrix) }}
     steps:
     - uses: actions/checkout@v3
 
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: '1.20.6'
+        go-version: ${{ matrix.version }}
+        check-latest: true
 
     - name: Build
       run: go build -v -a
