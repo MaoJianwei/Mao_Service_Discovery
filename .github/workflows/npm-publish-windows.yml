@@ -37,35 +37,32 @@ jobs:
         working-directory: ./webui/
         run: npm run build
         
-      - name: mv ../../resource/static/css/ ../../
-        working-directory: ./webui/dist/
-        run: mv ../../resource/static/css/ ../../
-        
-      - name: mv ../../resource/static/js/ ../../
-        working-directory: ./webui/dist/
-        run: mv ../../resource/static/js/ ../../
-        
-      - name: mv favicon.ico ../../resource/static/
-        working-directory: ./webui/dist/
-        run: mv favicon.ico ../../resource/static/
-        
-      - name: mv index.html ../../resource/html/
-        working-directory: ./webui/dist/
-        run: mv index.html ../../resource/html/
-        
-      - name: mv ./css/ ../../resource/static/
-        working-directory: ./webui/dist/
-        run: mv ./css/ ../../resource/static/
-        
-      - name: mv ./js/ ../../resource/static/
-        working-directory: ./webui/dist/
-        run: mv ./js/ ../../resource/static/
-
-      - run: dir
+      - run: mv ./resource/static/favicon.ico .
+      - run: mv ./resource/html/index.html .
+      - run: mv ./resource/static/css/ .
+      - run: mv ./resource/static/js/ .
       
+      - run: mv ./webui/dist/favicon.ico ./resource/static/
+      - run: mv ./webui/dist/index.html ./resource/html/
+      - run: mv ./webui/dist/css/ ./resource/static/
+      - run: mv ./webui/dist/js/ ./resource/static/
+
       - run: mv ./MaoServerDiscovery.exe ./.npm-release-binary/
       - run: mv ./resource/ ./.npm-release-binary/
-      
+
+      - name: dir html
+        working-directory: ./.npm-release-binary/resource/html/
+        run: dir
+      - name: dir static
+        working-directory: ./.npm-release-binary/resource/static/
+        run: dir
+      - name: dir css
+        working-directory: ./.npm-release-binary/resource/static/css/
+        run: dir
+      - name: dir js
+        working-directory: ./.npm-release-binary/resource/static/js/
+        run: dir
+        
       - run: git config --global user.email "maojianwei2016@126.com"
       - run: git config --global user.name "Jianwei Mao"
       
