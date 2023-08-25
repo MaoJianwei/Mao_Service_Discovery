@@ -1,7 +1,9 @@
 package Config
 
 import (
+	"MaoServerDiscovery/cmd/lib/MaoCommon"
 	"MaoServerDiscovery/util"
+	"github.com/gin-gonic/gin"
 	yaml "gopkg.in/yaml.v3"
 	"io/ioutil"
 	"os"
@@ -21,6 +23,8 @@ const (
 	ERR_CODE_PATH_FORMAT       = 1
 	ERR_CODE_PATH_NOT_EXIST    = 2
 	ERR_CODE_PATH_TRANSIT_FAIL = 3
+
+	URL_CONFIG_ALL_TEXT_SHOW = "/getAllConfigText"
 )
 
 type ConfigYamlModule struct {
@@ -273,6 +277,25 @@ func fileIsNotExist(fileName string) bool {
 	return err != nil && os.IsNotExist(err)
 }
 
+func (C *ConfigYamlModule) configRestControlInterface() {
+	restfulServer := MaoCommon.ServiceRegistryGetRestfulServerModule()
+	if restfulServer == nil {
+		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to get RestfulServerModule, unable to register restful apis.")
+		return
+	}
+
+	restfulServer.RegisterGetApi(URL_CONFIG_ALL_TEXT_SHOW, C.showAllConfigText)
+}
+
+func (C *ConfigYamlModule) showAllConfigText(c *gin.Context) {
+	content, err := ioutil.ReadFile(C.configFilename)
+	if err != nil {
+		c.String(200, err.Error())
+	} else {
+		c.String(200, string(content))
+	}
+}
+
 func (C *ConfigYamlModule) InitConfigModule(configFilename string) bool {
 	C.configFilename = configFilename
 	C.needShutdown = false
@@ -297,6 +320,8 @@ func (C *ConfigYamlModule) InitConfigModule(configFilename string) bool {
 		util.MaoLogM(util.ERROR, MODULE_NAME, "ConfigModule: Fail to load config, err: %s", err.Error())
 		return false
 	}
+
+	C.configRestControlInterface()
 
 	go C.eventLoop(config)
 	return true
