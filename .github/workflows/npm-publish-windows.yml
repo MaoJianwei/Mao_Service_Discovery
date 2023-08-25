@@ -23,6 +23,7 @@ jobs:
 
       - name: Golang Build
         run: CGO_ENABLED=0 go build -a -v -ldflags '-extldflags "-static"'
+        shell: bash
 
       - run: dir
       
