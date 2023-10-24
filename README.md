@@ -6,6 +6,17 @@
 |Binary Release|[![Node.js Package Publish (Commit) (Linux)](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/npm-publish-linux.yml/badge.svg)](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/npm-publish-linux.yml) [![Node.js Package Publish (Commit) (Windows)](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/npm-publish-windows.yml/badge.svg)](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/npm-publish-windows.yml) [![Docker Image Publish](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/docker-publish.yml)|
 |Binary Link|[Github Docker Image](https://github.com/MaoJianwei/Mao_Service_Discovery/pkgs/container/mao_service_discovery) = [NPM official](https://www.npmjs.com/package/mao-service-discovery?activeTab=versions) = [Taobao & Alibaba Cloud mirror](https://npmmirror.com/package/mao-service-discovery)|
 
+## Web UI 2.0
+
+![WebUI_1.png](https://raw.githubusercontent.com/MaoJianwei/MaoServiceDiscovery/master/screenshot/WebUI_1.png)
+
+![WebUI_1_1.png](https://raw.githubusercontent.com/MaoJianwei/MaoServiceDiscovery/master/screenshot/WebUI_1_1.png)
+
+![WebUI_2.png](https://raw.githubusercontent.com/MaoJianwei/MaoServiceDiscovery/master/screenshot/WebUI_2.png)
+
+![WebUI_3.png](https://raw.githubusercontent.com/MaoJianwei/MaoServiceDiscovery/master/screenshot/WebUI_3.png)
+
+
 ## Software Architecture
 Please refer to [MODULES.md](https://github.com/MaoJianwei/Mao_Service_Discovery/blob/master/MODULES.md) file.
 
