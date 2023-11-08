@@ -6,6 +6,40 @@
 |Binary Release|[![Node.js Package Publish (Commit) (Linux)](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/npm-publish-linux.yml/badge.svg)](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/npm-publish-linux.yml) [![Node.js Package Publish (Commit) (Windows)](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/npm-publish-windows.yml/badge.svg)](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/npm-publish-windows.yml) [![Docker Image Publish](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/docker-publish.yml)|
 |Binary Link|[Github Docker Image](https://github.com/MaoJianwei/Mao_Service_Discovery/pkgs/container/mao_service_discovery) = [NPM official](https://www.npmjs.com/package/mao-service-discovery?activeTab=versions) = [Taobao & Alibaba Cloud mirror](https://npmmirror.com/package/mao-service-discovery)|
 
+## Build
+
+**Method 1: Compile and link statically, and build WebUI 2.0**
+```
+./build_all.sh
+```
+
+Method 2: Compile and link statically
+```
+./statically_linked_compilation.sh
+```
+
+Method 3: Build WebUI 2.0
+```
+./build_webui.sh
+```
+
+## Run
+
+**Example 1: Run client**
+```
+./MaoServerDiscovery client --report_server_addr 2001:db8::1 --silent --log_level WARN
+```
+
+**Example 2: Run server**
+```
+./MaoServerDiscovery server --report_server_addr :: --silent --log_level WARN \
+    --influxdb_url https://xxxxxx.maojianwei.com:12345 --influxdb_org_bucket xxxxxx --influxdb_token xxxxxx==
+```
+
+![client_help_example.png](https://raw.githubusercontent.com/MaoJianwei/MaoServiceDiscovery/master/screenshot/client_help_example.png)
+
+![server_help_example.png](https://raw.githubusercontent.com/MaoJianwei/MaoServiceDiscovery/master/screenshot/server_help_example.png)
+
 ## Web UI 2.0
 
 ![WebUI_1.png](https://raw.githubusercontent.com/MaoJianwei/MaoServiceDiscovery/master/screenshot/WebUI_1.png)
