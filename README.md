@@ -32,7 +32,12 @@ Method 3: Build WebUI 2.0
 
 **Example 2: Run server**
 
-In order to open the ICMP listening socket, you need **root account / sudo** to run this command.
+In order to open the ICMP listening socket, you need **CAP_NET_RAW capability from setcap / root account / sudo** to run this command.
+```
+$ sudo setcap CAP_NET_RAW+eip ./MaoServerDiscovery
+$ getcap ./MaoServerDiscovery
+  [output] ./MaoServerDiscovery cap_net_raw=eip
+```
 ```
 ./MaoServerDiscovery server --report_server_addr :: --silent --log_level WARN \
     --influxdb_url https://xxxxxx.maojianwei.com:12345 --influxdb_org_bucket xxxxxx --influxdb_token xxxxxx==
