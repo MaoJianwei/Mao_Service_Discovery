@@ -129,6 +129,8 @@ func (m *MysqlDataPublisher) databaseInsertServices(dbTx *sql.Tx) error {
 }
 
 func (m *MysqlDataPublisher) databaseSyncLoop() {
+
+	warnLogSuppress := false
 	for {
 		time.Sleep(1 * time.Second)
 		if m.dbConn == nil {
@@ -137,9 +139,13 @@ func (m *MysqlDataPublisher) databaseSyncLoop() {
 
 		dbTx, err := m.dbConn.BeginTx(context.Background(), &sql.TxOptions{Isolation: sql.LevelSerializable})
 		if err != nil {
-			util.MaoLogM(util.WARN, MODULE_NAME, "Fail to create a transaction, %s", err.Error())
+			if !warnLogSuppress {
+				util.MaoLogM(util.WARN, MODULE_NAME, "Fail to create a transaction, %s", err.Error())
+				warnLogSuppress = true
+			}
 			continue
 		}
+		warnLogSuppress = false
 
 		err = m.databaseInsertServices(dbTx)
 		if err != nil {
