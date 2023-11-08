@@ -31,6 +31,8 @@ Method 3: Build WebUI 2.0
 ```
 
 **Example 2: Run server**
+
+In order to open the ICMP listening socket, you need **root account / sudo** to run this command.
 ```
 ./MaoServerDiscovery server --report_server_addr :: --silent --log_level WARN \
     --influxdb_url https://xxxxxx.maojianwei.com:12345 --influxdb_org_bucket xxxxxx --influxdb_token xxxxxx==
