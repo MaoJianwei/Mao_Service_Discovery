@@ -21,7 +21,7 @@ echo "**************************************************"
 allDepsUnique=`echo -e $allDepsDup | grep -vE ^$ | sort -u`
 allDepsDup=`echo -e $allDepsDup | grep -vE ^$`
 
-rm $DEP_MAP_FILE
+rm $DEP_MAP_FILE 2> /dev/null
 
 for uni in $allDepsUnique
 do
