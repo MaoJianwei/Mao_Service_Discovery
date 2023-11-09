@@ -1,0 +1,22 @@
+name: Analyze Dependency Relationships Map
+
+on:
+  push:
+    branches: [ "*" ]
+    # Build semver tags as releases.
+    tags: [ '*.*' ]
+  pull_request:
+    branches: [ "*" ]
+    # Build semver tags as releases.
+    tags: [ '*.*' ]
+  workflow_dispatch:
+    
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Analyze Dependency Relationships
+      run: ./analyze_dependency_map.sh
+      shell: bash
