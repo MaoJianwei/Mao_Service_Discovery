@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	MODULE_NAME = "GRPC-Detect-module"
+	MODULE_NAME = "Aux-Data-Processor-module"
 )
 
 type AuxDataProcessorModule struct {
