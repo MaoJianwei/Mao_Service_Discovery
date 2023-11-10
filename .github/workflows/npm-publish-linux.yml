@@ -29,6 +29,9 @@ jobs:
         
       - run: ./build_webui.sh
       
+      - name: Run Check Version
+        run: ./MaoServerDiscovery -v
+        
       - run: mv ./MaoServerDiscovery ./.npm-release-binary/
       - run: cp -vrf ./resource/ ./.npm-release-binary/
       
