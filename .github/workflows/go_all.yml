@@ -39,3 +39,6 @@ jobs:
     - name: Test
       run: go test -v ./...
       shell: bash
+      
+    - name: Run Check Version
+      run: ./MaoServerDiscovery -v
