@@ -29,6 +29,9 @@ jobs:
       
       - name: Golang Test
         run: go test -v ./...
+
+      - name: Run Check Version
+        run: ./MaoServerDiscovery.exe -v
         
       - name: npm install
         working-directory: ./webui/
