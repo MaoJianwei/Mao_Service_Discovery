@@ -101,10 +101,10 @@ func updateEnvironmentTemperature() {
 						util.MaoLogM(util.WARN, c_MODULE_NAME, "Fail to parse temperature text, %s", err.Error())
 					}
 				} else {
-					util.MaoLogM(util.WARN, c_MODULE_NAME, "Fail to parse 1-line protocol data slice, %s", err.Error())
+					util.MaoLogM(util.WARN, c_MODULE_NAME, "Fail to parse 1-line protocol data slice, the number of elements is not 2, in fact %d", len(tempText))
 				}
 			} else {
-				util.MaoLogM(util.WARN, c_MODULE_NAME, "Fail to parse 1-line protocol data, %s", err.Error())
+				util.MaoLogM(util.WARN, c_MODULE_NAME, "Fail to parse 1-line protocol data, the lines of the result text is not 3, in fact %d.", len(w1DataSplit))
 			}
 		} else {
 			util.MaoLogM(util.WARN, c_MODULE_NAME, "Fail to get 1-line protocol data, %s", err.Error())
