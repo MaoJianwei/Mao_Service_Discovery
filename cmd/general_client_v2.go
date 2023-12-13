@@ -382,7 +382,7 @@ func (c *GeneralClientV2) gRpcProcessor(
 
 			if nat66Gateway {
 				nat66Now := c.nat66Last
-				c.nat66Last = nil
+				//c.nat66Last = nil
 				if nat66Now != nil {
 					auxDataMap["v6In"] = nat66Now.IPv6In
 					auxDataMap["v6Out"] = nat66Now.IPv6Out
@@ -390,7 +390,7 @@ func (c *GeneralClientV2) gRpcProcessor(
 			}
 			if envTempMonitor {
 				envTempNow := c.envTempLast
-				c.envTempLast = INVALID_ENV_TEMP
+				//c.envTempLast = INVALID_ENV_TEMP
 				if envTempNow > INVALID_ENV_TEMP + 100 {
 					auxDataMap["envTemp"] = envTempNow
 					auxDataMap["envGeo"] = "Beijing-HQ"
@@ -399,7 +399,7 @@ func (c *GeneralClientV2) gRpcProcessor(
 			}
 			if gpsMonitor {
 				gpsNow := c.gpsLast
-				c.gpsLast = nil
+				//c.gpsLast = nil
 				if gpsNow != nil {
 					auxDataMap["GPS_Timestamp"] = gpsNow.Timestamp
 					auxDataMap["GPS_Latitude"] = gpsNow.Latitude
