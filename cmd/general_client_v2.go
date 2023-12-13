@@ -455,9 +455,15 @@ func (c *GeneralClientV2) Run(reportServerAddr *net.IP, reportServerPort uint32,
 	go c.influxdbPersistentProcessor(influxdbUrl, influxdbOrgBucket, influxdbToken,
 		nat66Persistent, gpsPersistent, envTempPersistent)
 
-	go c.gpsProcessor(gpsPersistent)
-	go c.nat66Processor(nat66Persistent)
-	go c.envTempProcessor(envTempPersistent)
+	if gpsMonitor {
+		go c.gpsProcessor(gpsPersistent)
+	}
+	if nat66Gateway {
+		go c.nat66Processor(nat66Persistent)
+	}
+	if envTempMonitor {
+		go c.envTempProcessor(envTempPersistent)
+	}
 
 	c.gRpcProcessor(reportServerAddr, reportServerPort, reportInterval, silent,
 		nat66Gateway, gpsMonitor, envTempMonitor)
