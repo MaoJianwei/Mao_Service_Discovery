@@ -157,7 +157,7 @@ func (c *GeneralClientV2) getEnvironmentTemperature() (float64, error) {
 func (c *GeneralClientV2) envTempProcessor(envTempPersistent bool) {
 	var epoch uint32 = 1
 	for {
-		time.Sleep(1 * time.Second)
+		time.Sleep(500 * time.Millisecond)
 
 		envTempData, err := c.getEnvironmentTemperature()
 		if err != nil {
