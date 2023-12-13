@@ -91,10 +91,16 @@ var generalClientCmd = &cobra.Command{
 			}
 		}
 
-		branch.RunGeneralClient(&report_server_addr, report_server_port, report_interval, silent,
+		client := &branch.GeneralClientV2{}
+		client.Run(&report_server_addr, report_server_port, report_interval, silent,
 			influxdbUrl, influxdbOrgBucket, influxdbToken,
 			nat66Gateway, nat66Persistent, gpsMonitor, gpsPersistent, envTempMonitor, envTempPersistent,
 			minLogLevel)
+
+		//branch.RunGeneralClient(&report_server_addr, report_server_port, report_interval, silent,
+		//	influxdbUrl, influxdbOrgBucket, influxdbToken,
+		//	nat66Gateway, nat66Persistent, gpsMonitor, gpsPersistent, envTempMonitor, envTempPersistent,
+		//	minLogLevel)
 	},
 }
 

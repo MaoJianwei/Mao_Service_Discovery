@@ -1,7 +1,7 @@
 package branch
 
 import (
-	"MaoServerDiscovery/cmd/lib/MaoCommon"
+	"MaoServerDiscovery/cmd/api/data"
 	pb "MaoServerDiscovery/grpc.maojianwei.com/server/discovery/api"
 	util "MaoServerDiscovery/util"
 	"encoding/json"
@@ -23,7 +23,7 @@ const (
 
 var (
 	envTemp float64
-	gpsLast *MaoCommon.GpsData
+	gpsLast *data.GpsData
 )
 
 func nat66UploadInfluxdb(writeAPI *influxdb2Api.WriteAPI, v6In uint64, v6Out uint64) {
@@ -39,8 +39,8 @@ func nat66UploadInfluxdb(writeAPI *influxdb2Api.WriteAPI, v6In uint64, v6Out uin
 }
 
 /*
-    return v6In,v6Out,error
- */
+   return v6In,v6Out,error
+*/
 func getNat66GatewayData() (uint64, uint64, error) {
 	ccc := exec.Command("/bin/bash", "-c", "ip6tables -nvxL FORWARD | grep MaoIPv6In | awk '{printf $2}'")
 	ininin, err := ccc.CombinedOutput()
@@ -113,7 +113,7 @@ func updateEnvironmentTemperature() {
 	}
 }
 
-func gpsDataUploadInfluxdb(writeAPI *influxdb2Api.WriteAPI, gpsData *MaoCommon.GpsData) {
+func gpsDataUploadInfluxdb(writeAPI *influxdb2Api.WriteAPI, gpsData *data.GpsData) {
 	// write point asynchronously
 	(*writeAPI).WritePoint(
 		influxdb2.NewPointWithMeasurement("GPS").
@@ -130,14 +130,14 @@ func gpsDataUploadInfluxdb(writeAPI *influxdb2Api.WriteAPI, gpsData *MaoCommon.G
 	//(*writeAPI).Flush()
 }
 
-func updateGpsInfo(gpsApiData string) (*MaoCommon.GpsData) {
+func updateGpsInfo(gpsApiData string) (*data.GpsData) {
 
 	var err1 error
 	var err2 error
 	var err3 error
 	var err4 error
 
-	newGps := &MaoCommon.GpsData{}
+	newGps := &data.GpsData{}
 
 	items := strings.Split(gpsApiData, ";")
 	for _, item := range items {

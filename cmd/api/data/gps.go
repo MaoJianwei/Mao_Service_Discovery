@@ -1,4 +1,4 @@
-package MaoCommon
+package data
 
 
 type GpsData struct {
