@@ -2,6 +2,8 @@ package data
 
 
 type GpsData struct {
+	Epoch uint32
+
 	Timestamp string
 
 	Latitude float64

@@ -27,12 +27,12 @@ const (
 type GeneralClientV2 struct {
 
 	// for influxdb persistent
-	envTempDataChannel chan float64
+	envTempDataChannel chan *data.Temperature
 	gpsDataChannel chan *data.GpsData
 	nat66DataChannel chan *data.Nat66
 
 	// for gRPC upload report
-	envTempLast float64
+	envTempLast *data.Temperature
 	gpsLast *data.GpsData
 	nat66Last *data.Nat66
 }
@@ -101,6 +101,7 @@ func (c *GeneralClientV2) getGpsInfo() (*data.GpsData, error) {
 }
 
 func (c *GeneralClientV2) gpsProcessor(gpsPersistent bool) {
+	var epoch uint32 = 1
 	for {
 		time.Sleep(1 * time.Second)
 
@@ -108,6 +109,9 @@ func (c *GeneralClientV2) gpsProcessor(gpsPersistent bool) {
 		if err != nil {
 			continue
 		}
+
+		gpsData.Epoch = epoch
+		epoch++
 
 		if gpsPersistent {
 			c.gpsDataChannel <- gpsData
@@ -151,6 +155,7 @@ func (c *GeneralClientV2) getEnvironmentTemperature() (float64, error) {
 }
 
 func (c *GeneralClientV2) envTempProcessor(envTempPersistent bool) {
+	var epoch uint32 = 1
 	for {
 		time.Sleep(1 * time.Second)
 
@@ -159,10 +164,16 @@ func (c *GeneralClientV2) envTempProcessor(envTempPersistent bool) {
 			continue
 		}
 
-		if envTempPersistent {
-			c.envTempDataChannel <- envTempData
+		envTemperature := &data.Temperature{
+			Epoch:       epoch,
+			Temperature: envTempData,
 		}
-		c.envTempLast = envTempData
+		epoch++
+
+		if envTempPersistent {
+			c.envTempDataChannel <- envTemperature
+		}
+		c.envTempLast = envTemperature
 	}
 }
 
@@ -199,6 +210,7 @@ func (c *GeneralClientV2) getNat66GatewayData() (uint64, uint64, error) {
 }
 
 func (c *GeneralClientV2) nat66Processor(nat66Persistent bool) {
+	var epoch uint32 = 1
 	for {
 		time.Sleep(1 * time.Second)
 
@@ -208,9 +220,11 @@ func (c *GeneralClientV2) nat66Processor(nat66Persistent bool) {
 		}
 
 		nat66Data := &data.Nat66{
+			Epoch:   epoch,
 			IPv6In:  v6In,
 			IPv6Out: v6Out,
 		}
+		epoch++
 
 		if nat66Persistent {
 			c.nat66DataChannel <- nat66Data
@@ -278,7 +292,7 @@ func (c *GeneralClientV2) influxdbPersistentProcessor(influxdbUrl string, influx
 	for {
 		select {
 		case envTempData := <- c.envTempDataChannel:
-			c.envTempUploadInfluxdb(&influxdbWriteAPI, envTempData)
+			c.envTempUploadInfluxdb(&influxdbWriteAPI, envTempData.Temperature)
 		case gpsData := <- c.gpsDataChannel:
 			c.gpsDataUploadInfluxdb(&influxdbWriteAPI, gpsData)
 		case nat66Data := <- c.nat66DataChannel:
@@ -384,23 +398,26 @@ func (c *GeneralClientV2) gRpcProcessor(
 				nat66Now := c.nat66Last
 				//c.nat66Last = nil
 				if nat66Now != nil {
-					auxDataMap["v6In"] = nat66Now.IPv6In
-					auxDataMap["v6Out"] = nat66Now.IPv6Out
+					auxDataMap["NAT66_Epoch"] = nat66Now.Epoch
+					auxDataMap["NAT66_v6In"] = nat66Now.IPv6In
+					auxDataMap["NAT66_v6Out"] = nat66Now.IPv6Out
 				}
 			}
 			if envTempMonitor {
 				envTempNow := c.envTempLast
 				//c.envTempLast = INVALID_ENV_TEMP
-				if envTempNow > INVALID_ENV_TEMP + 100 {
-					auxDataMap["envTemp"] = envTempNow
-					auxDataMap["envGeo"] = "Beijing-HQ"
-					auxDataMap["envTime"] = time.Now().Format(time.RFC3339Nano) // RFC3339Nano, most precise format
+				if envTempNow != nil && envTempNow.Temperature > INVALID_ENV_TEMP + 100 {
+					auxDataMap["Env_Temp_Epoch"] = envTempNow.Epoch
+					auxDataMap["Env_Temp"] = envTempNow.Temperature
+					auxDataMap["Env_Geo"] = "Beijing-HQ"
+					auxDataMap["Env_Time"] = time.Now().Format(time.RFC3339Nano) // RFC3339Nano, most precise format
 				}
 			}
 			if gpsMonitor {
 				gpsNow := c.gpsLast
 				//c.gpsLast = nil
 				if gpsNow != nil {
+					auxDataMap["GPS_Epoch"] = gpsNow.Epoch
 					auxDataMap["GPS_Timestamp"] = gpsNow.Timestamp
 					auxDataMap["GPS_Latitude"] = gpsNow.Latitude
 					auxDataMap["GPS_Longitude"] = gpsNow.Longitude
@@ -444,11 +461,11 @@ func (c *GeneralClientV2) Run(reportServerAddr *net.IP, reportServerPort uint32,
 
 	util.InitMaoLog(minLogLevel)
 
-	c.envTempLast = INVALID_ENV_TEMP
+	c.envTempLast = nil
 	c.gpsLast = nil
 	c.nat66Last = nil
 
-	c.envTempDataChannel = make(chan float64, 1024)
+	c.envTempDataChannel = make(chan *data.Temperature, 1024)
 	c.gpsDataChannel = make(chan *data.GpsData, 1024)
 	c.nat66DataChannel = make(chan *data.Nat66, 1024)
 
