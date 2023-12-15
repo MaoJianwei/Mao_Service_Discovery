@@ -1,13 +1,13 @@
 <template>
   <div style="margin: 20px" />
   <el-form :model="form" label-width="120px" label-position="top" style="max-width: 600px">
-    <el-form-item label="Mysql Server address">
+    <el-form-item label="MySQL Server address">
       <el-input v-model="form.mysqlServerAddr" placeholder="e.g. mysql.mao.com"/>
     </el-form-item>
-    <el-form-item label="Mysql Server port">
+    <el-form-item label="MySQL Server port">
       <el-input v-model="form.mysqlServerPort" placeholder="e.g. 3306"/>
     </el-form-item>
-    <el-form-item label="Mysql database name">
+    <el-form-item label="MySQL database name">
       <el-input v-model="form.databaseName" placeholder="e.g. MaoDB"/>
     </el-form-item>
     <el-form-item label="Username">
@@ -52,7 +52,7 @@ export default {
           .then(function (res) {
             var data = res.data;
             vueThis.form.mysqlServerAddr = data["mysqlServerAddr"]
-            vueThis.form.mysqlServerPort = data["mysqlServerPort"]
+            vueThis.form.mysqlServerPort = data["mysqlServerPort"] !== 0 ? data["mysqlServerPort"] : ""
             vueThis.form.databaseName = data["databaseName"]
             vueThis.form.username = data["username"]
             vueThis.form.password = ""
