@@ -2,6 +2,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import ConfigPages from "@/components/ConfigPages.vue"
 import ConfigEmail from "@/components/config/ConfigEmail.vue";
+import ConfigMysql from "@/components/config/ConfigMysql.vue";
 import ConfigIcmp from "@/components/config/ConfigIcmp.vue";
 import ConfigTopo from "@/components/config/ConfigTopo.vue";
 import ConfigAllText from "@/components/config/ConfigAllText.vue";
@@ -49,6 +50,12 @@ export default createRouter({
                         path: 'topo',
                         components: {
                             maoConfig: ConfigTopo
+                        }
+                    },
+                    {
+                        path: 'mysql',
+                        components: {
+                            maoConfig: ConfigMysql
                         }
                     },
                     {
