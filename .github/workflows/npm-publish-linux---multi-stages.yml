@@ -46,6 +46,8 @@ jobs:
       - run: ls -al ./
       - run: ls -al ../
       - run: ls -al ../../
+      - run: ls -al ../../../
+      - run: find ../../../
       
       - name: Refresh version for NPM Package
         working-directory: ./.npm-release-binary/
