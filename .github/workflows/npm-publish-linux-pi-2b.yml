@@ -16,7 +16,7 @@ on:
 
 jobs:
   publish-npm:
-    runs-on: self-hosted
+    runs-on: PI-2B
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -24,7 +24,7 @@ jobs:
           node-version: 18
           registry-url: https://registry.npmjs.org/
 
-      # Mao: using the go toolchain deployed in the exist env, PI 2B.
+      # Mao: using the go toolchain deployed in the exist env, Raspberry PI 2B.
       # - name: Set up Go
       #   uses: actions/setup-go@v3
       #   with:
