@@ -43,6 +43,10 @@ jobs:
       - run: git config --global user.email "maojianwei2016@126.com"
       - run: git config --global user.name "Jianwei Mao"
       
+      - run: ls -al ./
+      - run: ls -al ../
+      - run: ls -al ../../
+      
       - name: Refresh version for NPM Package
         working-directory: ./.npm-release-binary/
         run: npm version prerelease --preid linux-rc1-$GITHUB_REF_NAME-$GITHUB_SHA
