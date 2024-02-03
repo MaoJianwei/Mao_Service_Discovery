@@ -49,7 +49,7 @@ jobs:
       
       - name: Refresh version for NPM Package
         working-directory: ./.npm-release-binary/
-        run: npm version prerelease --preid linux-pi-2b-rc1-$GITHUB_REF_NAME-$GITHUB_SHA
+        run: npm version prerelease --preid Raspberry-Pi-rc1-$GITHUB_REF_NAME-$GITHUB_SHA
         
       - name: Publish NPM Package
         working-directory: ./.npm-release-binary/
