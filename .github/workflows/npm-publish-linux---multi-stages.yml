@@ -6,8 +6,6 @@ name: Node.js Package Publish (Commit, Multi stages) (Linux)
 on:
   push:
     branches: [ "*" ]
-    # Build semver tags as releases.
-    tags: [ '*.*' ]
   workflow_dispatch:
 
 jobs:
@@ -39,6 +37,7 @@ jobs:
       - run: cp -vrf ./resource/ ./.npm-release-binary/
       
   publish-npm:
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - run: git config --global user.email "maojianwei2016@126.com"
