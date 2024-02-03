@@ -6,6 +6,9 @@ name: Node.js Package Publish (Commit, Multi stages) (Linux)
 on:
   push:
     branches: [ "*" ]
+    # Build semver tags as releases.
+    tags: [ '*.*' ]
+  workflow_dispatch:
 
 jobs:
   build:
