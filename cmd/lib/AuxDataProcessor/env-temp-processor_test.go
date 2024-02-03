@@ -16,7 +16,7 @@ func TestEnvTempProcessor_Process(t *testing.T) {
 
 	mmm := make(map[string]interface{})
 	mmm["envTemp"] = 26.588
-	mmm["v6In"] = 0xABCDEF96
+	mmm["v6In"] = 0x7BCDEF96
 	mmm["v6Out"] = "Bigmao Radar"
 
 	b, err := json.Marshal(mmm)
