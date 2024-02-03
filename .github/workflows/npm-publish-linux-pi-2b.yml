@@ -22,7 +22,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 18
-          registry-url: https://registry.npmjs.org/
+          registry-url: https://registry.npmmirror.com/
 
       # Mao: using the go toolchain deployed in the exist env, Raspberry PI 2B.
       # - name: Set up Go
