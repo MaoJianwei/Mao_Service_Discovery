@@ -23,10 +23,12 @@ jobs:
         with:
           node-version: 18
           registry-url: https://registry.npmjs.org/
-      - name: Set up Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: '1.21.6'
+
+      # Mao: using the go toolchain deployed in the exist env, PI 2B.
+      # - name: Set up Go
+      #   uses: actions/setup-go@v3
+      #   with:
+      #     go-version: '1.21.6'
           
       - name: Golang Build
         run: ./statically_linked_compilation.sh
