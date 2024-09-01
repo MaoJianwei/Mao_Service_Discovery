@@ -214,7 +214,7 @@ func (o *OnosTopoModule) topoEventLoop() {
 				}()
 			case MaoApi.SERVICE_DOWN:
 				go func(){
-					o.topoAddDevice(event.ServiceName, event.Timestamp.String(), event.EventSource)
+					//o.topoAddDevice(event.ServiceName, event.Timestamp.String(), event.EventSource)
 					o.topoOfflineDevice(event.ServiceName)
 				}()
 			case MaoApi.SERVICE_DELETE:
