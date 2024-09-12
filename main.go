@@ -9,6 +9,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	_ "net/http/pprof"
 )
 
 const (
@@ -389,7 +390,10 @@ func readGeneralClientArgs(cmd *cobra.Command) error {
 
 
 func main() {
-
+	go func() {
+	   log.Print(http.ListenAndServe("0.0.0.0:39999", nil))
+	}()
+	
 	rootCmd.AddCommand(generalClientCmd, serverCmd)
 
 	if err := rootCmd.Execute(); err != nil {
