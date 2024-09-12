@@ -333,6 +333,8 @@ func sendRequest(method string, url string, body []byte) bool {
 
 	client := http.Client{}
 	resp, err := client.Do(req)
+	defer resp.Body.Close()
+	
 	if err != nil {
 		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to do request: %s %s, err: %s",
 			req.Method, req.URL.String(), err.Error())
