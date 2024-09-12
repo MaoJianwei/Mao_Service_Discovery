@@ -9,6 +9,8 @@ import (
 	"os"
 	"runtime"
 	"strings"
+
+	"net/http"
 	_ "net/http/pprof"
 )
 
@@ -391,7 +393,7 @@ func readGeneralClientArgs(cmd *cobra.Command) error {
 
 func main() {
 	go func() {
-	   log.Print(http.ListenAndServe("0.0.0.0:39999", nil))
+	   util.MaoLog(util.INFO, "enable pprof: %v", http.ListenAndServe("0.0.0.0:39999", nil))
 	}()
 	
 	rootCmd.AddCommand(generalClientCmd, serverCmd)
