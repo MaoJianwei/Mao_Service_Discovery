@@ -24,6 +24,6 @@ WORKDIR /
 COPY --from=webui_builder "/resource/" "/resource/"
 COPY --from=golang_builder "/MaoServerDiscovery" "/"
 
-EXPOSE 28888 29999
+EXPOSE 28888 29999 39999
 
 CMD ["/MaoServerDiscovery", "server"]
