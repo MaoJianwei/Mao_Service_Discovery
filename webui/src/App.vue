@@ -17,6 +17,11 @@
               服务配置
             </el-menu-item>
 
+            <el-menu-item index="/topo">
+              <el-icon><Menu /></el-icon>
+              数字地图
+            </el-menu-item>
+
             <el-menu-item index="/apiListOldApi">
               <el-icon><Menu /></el-icon>
               API列表、老版WebUI

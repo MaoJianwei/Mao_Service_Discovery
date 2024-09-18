@@ -73,7 +73,7 @@ export default createRouter({
                 }
             },
             {
-                path: '/onos',
+                path: '/topo',
                 components: {
                     maoMain: ONOS
                 }
