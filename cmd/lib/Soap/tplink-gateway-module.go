@@ -18,22 +18,29 @@ const (
 	FLAG_GATEWAY_PacketsSentSpeed = 1 << 3
 	FLAG_GATEWAY_Uptime = 1 << 4
 
+	INT32_MAX_VALUE = 0x100000000
 )
 
 type TplinkGatewayModule struct {
 
+	lastseen_BytesReceived_Accumulated_Baseline uint64
 	lastseen_BytesReceived uint64
 	lastseen_BytesReceived_timestamp time.Time
 
+	lastseen_BytesSent_Accumulated_Baseline uint64
 	lastseen_BytesSent uint64
 	lastseen_BytesSent_timestamp time.Time
 
+	lastseen_PacketsReceived_Accumulated_Baseline uint64
 	lastseen_PacketsReceived uint64
 	lastseen_PacketsReceived_timestamp time.Time
 
+	lastseen_PacketsSent_Accumulated_Baseline uint64
 	lastseen_PacketsSent uint64
 	lastseen_PacketsSent_timestamp time.Time
 
+	lastseen_Uptime_Accumulated_Baseline uint64
+	lastseen_Uptime uint64
 	lastseen_Uptime_timestamp time.Time
 
 	BytesReceivedSpeed uint64
@@ -51,7 +58,7 @@ func (t *TplinkGatewayModule) publishInfluxDB(writeAPI *influxdb2Api.WriteAPI, f
 			influxdb2.NewPointWithMeasurement(MaoApi.GATEWAY_MEASUREMENT).
 				AddTag(MaoApi.GATEWAY_TAG_GEO, "Beijing-HQ").
 				AddField(MaoApi.GATEWAY_FIELD_BytesReceivedSpeed, t.BytesReceivedSpeed).
-				AddField(MaoApi.GATEWAY_FIELD_BytesReceived, t.lastseen_BytesReceived).
+				AddField(MaoApi.GATEWAY_FIELD_BytesReceived, t.lastseen_BytesReceived_Accumulated_Baseline + t.lastseen_BytesReceived).
 				SetTime(t.lastseen_BytesReceived_timestamp))
 	}
 	if finishFlag & FLAG_GATEWAY_BytesSentSpeed != 0 {
@@ -59,7 +66,7 @@ func (t *TplinkGatewayModule) publishInfluxDB(writeAPI *influxdb2Api.WriteAPI, f
 			influxdb2.NewPointWithMeasurement(MaoApi.GATEWAY_MEASUREMENT).
 				AddTag(MaoApi.GATEWAY_TAG_GEO, "Beijing-HQ").
 				AddField(MaoApi.GATEWAY_FIELD_BytesSentSpeed, t.BytesSentSpeed).
-				AddField(MaoApi.GATEWAY_FIELD_BytesSent, t.lastseen_BytesSent).
+				AddField(MaoApi.GATEWAY_FIELD_BytesSent, t.lastseen_BytesSent_Accumulated_Baseline + t.lastseen_BytesSent).
 				SetTime(t.lastseen_BytesSent_timestamp))
 	}
 	if finishFlag & FLAG_GATEWAY_PacketsReceivedSpeed != 0 {
@@ -67,7 +74,7 @@ func (t *TplinkGatewayModule) publishInfluxDB(writeAPI *influxdb2Api.WriteAPI, f
 			influxdb2.NewPointWithMeasurement(MaoApi.GATEWAY_MEASUREMENT).
 				AddTag(MaoApi.GATEWAY_TAG_GEO, "Beijing-HQ").
 				AddField(MaoApi.GATEWAY_FIELD_PacketsReceivedSpeed, t.PacketsReceivedSpeed).
-				AddField(MaoApi.GATEWAY_FIELD_PacketsReceived, t.lastseen_PacketsReceived).
+				AddField(MaoApi.GATEWAY_FIELD_PacketsReceived, t.lastseen_PacketsReceived_Accumulated_Baseline + t.lastseen_PacketsReceived).
 				SetTime(t.lastseen_PacketsReceived_timestamp))
 	}
 	if finishFlag & FLAG_GATEWAY_PacketsSentSpeed != 0 {
@@ -75,7 +82,7 @@ func (t *TplinkGatewayModule) publishInfluxDB(writeAPI *influxdb2Api.WriteAPI, f
 			influxdb2.NewPointWithMeasurement(MaoApi.GATEWAY_MEASUREMENT).
 				AddTag(MaoApi.GATEWAY_TAG_GEO, "Beijing-HQ").
 				AddField(MaoApi.GATEWAY_FIELD_PacketsSentSpeed, t.PacketsSentSpeed).
-				AddField(MaoApi.GATEWAY_FIELD_PacketsSent, t.lastseen_PacketsSent).
+				AddField(MaoApi.GATEWAY_FIELD_PacketsSent, t.lastseen_PacketsSent_Accumulated_Baseline + t.lastseen_PacketsSent).
 				SetTime(t.lastseen_PacketsSent_timestamp))
 	}
 	if finishFlag & FLAG_GATEWAY_Uptime != 0 {
@@ -117,13 +124,15 @@ func (t *TplinkGatewayModule) controlLoop(triggerChannel *chan uint) {
 		newBytesReceived, err := GetTotalBytesReceived()
 		newBytesReceived_timestamp := time.Now()
 		if err == nil {
+			// statistic may overflow (rollback to 0)
 			if newBytesReceived >= t.lastseen_BytesReceived {
 				t.BytesReceivedSpeed = uint64(float64(newBytesReceived - t.lastseen_BytesReceived) / (newBytesReceived_timestamp.Sub(t.lastseen_BytesReceived_timestamp).Seconds()))
 			} else {
-				t.BytesReceivedSpeed = uint64(float64(newBytesReceived) / (newBytesReceived_timestamp.Sub(t.lastseen_BytesReceived_timestamp).Seconds())) // statistic may overflow (rollback to 0)
+				t.BytesReceivedSpeed = uint64(float64(newBytesReceived + (INT32_MAX_VALUE- t.lastseen_BytesReceived)) / (newBytesReceived_timestamp.Sub(t.lastseen_BytesReceived_timestamp).Seconds()))
+				t.lastseen_BytesReceived_Accumulated_Baseline += INT32_MAX_VALUE
 			}
 			//log.Printf("%d, %f, %f", t.BytesReceivedSpeed, float64(newBytesReceived - t.lastseen_BytesReceived), newBytesReceived_timestamp.Sub(t.lastseen_BytesReceived_timestamp).Seconds())
-			t.lastseen_BytesReceived = newBytesReceived // statistic may overflow (rollback to 0)
+			t.lastseen_BytesReceived = newBytesReceived
 			t.lastseen_BytesReceived_timestamp = newBytesReceived_timestamp
 			finishFlag |= FLAG_GATEWAY_BytesReceivedSpeed
 		} else {
@@ -133,12 +142,14 @@ func (t *TplinkGatewayModule) controlLoop(triggerChannel *chan uint) {
 		newBytesSent, err := GetTotalBytesSent()
 		newBytesSent_timestamp := time.Now()
 		if err == nil {
+			// statistic may overflow (rollback to 0)
 			if newBytesSent >= t.lastseen_BytesSent {
 				t.BytesSentSpeed = uint64(float64(newBytesSent - t.lastseen_BytesSent) / (newBytesSent_timestamp.Sub(t.lastseen_BytesSent_timestamp).Seconds()))
 			} else {
-				t.BytesSentSpeed = uint64(float64(newBytesSent) / (newBytesSent_timestamp.Sub(t.lastseen_BytesSent_timestamp).Seconds())) // statistic may overflow (rollback to 0)
+				t.BytesSentSpeed = uint64(float64(newBytesSent + (INT32_MAX_VALUE - t.lastseen_BytesSent)) / (newBytesSent_timestamp.Sub(t.lastseen_BytesSent_timestamp).Seconds()))
+				t.lastseen_BytesSent_Accumulated_Baseline += INT32_MAX_VALUE
 			}
-			t.lastseen_BytesSent = newBytesSent // statistic may overflow (rollback to 0)
+			t.lastseen_BytesSent = newBytesSent
 			t.lastseen_BytesSent_timestamp = newBytesSent_timestamp
 			finishFlag |= FLAG_GATEWAY_BytesSentSpeed
 		} else {
@@ -148,12 +159,14 @@ func (t *TplinkGatewayModule) controlLoop(triggerChannel *chan uint) {
 		newPacketsReceived, err := GetTotalPacketsReceived()
 		newPacketsReceived_timestamp := time.Now()
 		if err == nil {
+			// statistic may overflow (rollback to 0)
 			if newPacketsReceived >= t.lastseen_PacketsReceived {
 				t.PacketsReceivedSpeed = uint64(float64(newPacketsReceived - t.lastseen_PacketsReceived) / (newPacketsReceived_timestamp.Sub(t.lastseen_PacketsReceived_timestamp).Seconds()))
 			} else {
-				t.PacketsReceivedSpeed = uint64(float64(newPacketsReceived) / (newPacketsReceived_timestamp.Sub(t.lastseen_PacketsReceived_timestamp).Seconds())) // statistic may overflow (rollback to 0)
+				t.PacketsReceivedSpeed = uint64(float64(newPacketsReceived + (INT32_MAX_VALUE - t.lastseen_PacketsReceived)) / (newPacketsReceived_timestamp.Sub(t.lastseen_PacketsReceived_timestamp).Seconds()))
+				t.lastseen_PacketsReceived_Accumulated_Baseline += INT32_MAX_VALUE
 			}
-			t.lastseen_PacketsReceived = newPacketsReceived // statistic may overflow (rollback to 0)
+			t.lastseen_PacketsReceived = newPacketsReceived
 			t.lastseen_PacketsReceived_timestamp = newPacketsReceived_timestamp
 			finishFlag |= FLAG_GATEWAY_PacketsReceivedSpeed
 		} else {
@@ -163,12 +176,14 @@ func (t *TplinkGatewayModule) controlLoop(triggerChannel *chan uint) {
 		newPacketsSent, err := GetTotalPacketsSent()
 		newPacketsSent_timestamp := time.Now()
 		if err == nil {
+			// statistic may overflow (rollback to 0)
 			if newPacketsSent >= t.lastseen_PacketsSent {
 				t.PacketsSentSpeed = uint64(float64(newPacketsSent - t.lastseen_PacketsSent) / (newPacketsSent_timestamp.Sub(t.lastseen_PacketsSent_timestamp).Seconds()))
 			} else {
-				t.PacketsSentSpeed = uint64(float64(newPacketsSent) / (newPacketsSent_timestamp.Sub(t.lastseen_PacketsSent_timestamp).Seconds())) // statistic may overflow (rollback to 0)
+				t.PacketsSentSpeed = uint64(float64(newPacketsSent + (INT32_MAX_VALUE - t.lastseen_PacketsSent)) / (newPacketsSent_timestamp.Sub(t.lastseen_PacketsSent_timestamp).Seconds()))
+				t.lastseen_PacketsSent_Accumulated_Baseline += INT32_MAX_VALUE
 			}
-			t.lastseen_PacketsSent = newPacketsSent // statistic may overflow (rollback to 0)
+			t.lastseen_PacketsSent = newPacketsSent
 			t.lastseen_PacketsSent_timestamp = newPacketsSent_timestamp
 			finishFlag |= FLAG_GATEWAY_PacketsSentSpeed
 		} else {
@@ -178,7 +193,11 @@ func (t *TplinkGatewayModule) controlLoop(triggerChannel *chan uint) {
 		newUptime, err := GetUptime()
 		newUptime_timestamp := time.Now()
 		if err == nil {
-			t.Uptime = newUptime
+			if newUptime < t.lastseen_Uptime {
+				t.lastseen_Uptime_Accumulated_Baseline += INT32_MAX_VALUE
+			}
+			t.Uptime = t.lastseen_Uptime_Accumulated_Baseline + newUptime
+			t.lastseen_Uptime = newUptime
 			t.lastseen_Uptime_timestamp = newUptime_timestamp
 			finishFlag |= FLAG_GATEWAY_Uptime
 		} else {
