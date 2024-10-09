@@ -291,7 +291,7 @@ func (m *IcmpDetectModule) refreshShowingService() {
 
 
 
-func (m *IcmpDetectModule) getServiceConfig() (serviceList []string){
+func (m *IcmpDetectModule) getServiceConfig() (serviceList []string) {
 	serviceList = make([]string, 0)
 
 	configModule := MaoCommon.ServiceRegistryGetConfigModule()

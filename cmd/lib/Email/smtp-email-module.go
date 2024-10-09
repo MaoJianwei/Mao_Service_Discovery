@@ -187,7 +187,7 @@ func (s *SmtpEmailModule) loadEmailConfig() {
 
 	emailConfigMap, ok := emailConfig.(map[string]interface{})
 	if !ok {
-		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to parse email config, can't convert to map[interface{}]interface{}")
+		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to parse email config, can't convert to map[string]interface{}")
 		return
 	}
 

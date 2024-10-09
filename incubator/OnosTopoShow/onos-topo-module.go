@@ -2,6 +2,7 @@ package OnosTopoShow
 
 import (
 	MaoApi "MaoServerDiscovery/cmd/api"
+	"MaoServerDiscovery/cmd/lib/Config"
 	"MaoServerDiscovery/cmd/lib/MaoCommon"
 	"MaoServerDiscovery/util"
 	"bytes"
@@ -26,6 +27,16 @@ const (
 
 	ONOS_CONFIG_PATH     = "/ONOS"
 	ONOS_API_CONFIG_PATH = "/ONOS/APIs"
+
+	ONOS_API_KEY_ADD_DEVICE= "ADD_DEVICE_API"
+	ONOS_API_KEY_REMOVE_DEVICE= "REMOVE_DEVICE_API"
+	ONOS_API_KEY_DELETE_DEVICE= "DELETE_DEVICE_API"
+	ONOS_API_KEY_ADD_LINK= "ADD_LINK_API"
+	ONOS_API_KEY_REMOVE_LINK= "REMOVE_LINK_API"
+
+	ONOS_CONFIG_KEY_ADDRPORT = "addrPort"
+
+	ONOS_CONFIG_INVALID_ADDRPORT = ""
 )
 
 type OnosTopoModule struct {
@@ -65,6 +76,8 @@ func (o *OnosTopoModule) InitOnosTopoModule(hostname string, version string) boo
 
 	o.portMapping = make(map[string]uint)
 
+	o.loadOnosConfig()
+
 	o.configRestControlInterface()
 
 	go o.topoEventLoop()
@@ -72,6 +85,49 @@ func (o *OnosTopoModule) InitOnosTopoModule(hostname string, version string) boo
 }
 
 
+func (o *OnosTopoModule) loadOnosConfig() {
+	addrPort := o.getAddrPortConfig()
+	if addrPort == ONOS_CONFIG_INVALID_ADDRPORT {
+		return
+	}
+
+	o.addrPort = addrPort
+	o.configOnosEndpointAPI(addrPort)
+}
+
+func (o *OnosTopoModule) getAddrPortConfig() (addrPort string) {
+
+	addrPort = ONOS_CONFIG_INVALID_ADDRPORT
+	configModule := MaoCommon.ServiceRegistryGetConfigModule()
+	if configModule == nil {
+		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to get config module instance")
+		return
+	}
+
+	onosConfig, errCode := configModule.GetConfig(ONOS_CONFIG_PATH)
+	if errCode != Config.ERR_CODE_SUCCESS {
+		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to get onos addrPort from config, errCode: %d", errCode)
+		return
+	}
+	if onosConfig == nil {
+		util.MaoLogM(util.WARN, MODULE_NAME, "There is no onos config. You may need to config onos module.")
+		return
+	}
+
+	onosConfigMap, ok := onosConfig.(map[string]interface{})
+	if !ok {
+		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to parse onos config, can't convert to map[string]interface{}")
+		return
+	}
+
+	addrPort, ok = onosConfigMap[ONOS_CONFIG_KEY_ADDRPORT].(string)
+	if !ok {
+		util.MaoLogM(util.WARN, MODULE_NAME, fmt.Sprintf("Fail to parse onos config - %s", ONOS_CONFIG_KEY_ADDRPORT));
+		return ONOS_CONFIG_INVALID_ADDRPORT
+	}
+
+	return
+}
 
 
 
@@ -92,23 +148,20 @@ func (o *OnosTopoModule) showOnosPage(c *gin.Context) {
 }
 
 func (o *OnosTopoModule) showOnosInfo(c *gin.Context) {
-	// TODO: TEST
 	data := make(map[string]interface{})
-	data["addrPort"] = o.addrPort
-	data["ADD_DEVICE_API"] = o.ADD_DEVICE_API
-	data["REMOVE_DEVICE_API"] = o.REMOVE_DEVICE_API
-	data["DELETE_DEVICE_API"] = o.DELETE_DEVICE_API
-	data["ADD_LINK_API"] = o.ADD_LINK_API
-	data["REMOVE_LINK_API"] = o.REMOVE_LINK_API
+	data[ONOS_CONFIG_KEY_ADDRPORT] = o.addrPort
+	data[ONOS_API_KEY_ADD_DEVICE] = o.ADD_DEVICE_API
+	data[ONOS_API_KEY_REMOVE_DEVICE] = o.REMOVE_DEVICE_API
+	data[ONOS_API_KEY_DELETE_DEVICE] = o.DELETE_DEVICE_API
+	data[ONOS_API_KEY_ADD_LINK] = o.ADD_LINK_API
+	data[ONOS_API_KEY_REMOVE_LINK] = o.REMOVE_LINK_API
 
 	// Attention: password can't be outputted !!!
 	c.JSON(200, data)
 }
 
 func (o *OnosTopoModule) processOnosInfo(c *gin.Context) {
-	// TODO: TEST
-
-	addrPort, ok := c.GetPostForm("addrPort")
+	addrPort, ok := c.GetPostForm(ONOS_CONFIG_KEY_ADDRPORT)
 	if ok {
 		o.addrPort = addrPort
 		o.configOnosEndpointAPI(addrPort)
@@ -119,16 +172,18 @@ func (o *OnosTopoModule) processOnosInfo(c *gin.Context) {
 		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to get config module instance, can't save email info")
 	} else {
 		data := make(map[string]interface{})
-		data["addrPort"] = o.addrPort
+		data[ONOS_CONFIG_KEY_ADDRPORT] = o.addrPort
 		configModule.PutConfig(ONOS_CONFIG_PATH, data)
 
-		apiData := make(map[string]interface{})
-		apiData["ADD_DEVICE_API"] = o.ADD_DEVICE_API
-		apiData["REMOVE_DEVICE_API"] = o.REMOVE_DEVICE_API
-		apiData["DELETE_DEVICE_API"] = o.DELETE_DEVICE_API
-		apiData["ADD_LINK_API"] = o.ADD_LINK_API
-		apiData["REMOVE_LINK_API"] = o.REMOVE_LINK_API
-		configModule.PutConfig(ONOS_API_CONFIG_PATH, apiData)
+		// Mao: These configs can be restored, so we don't need to save them.
+		//
+		//apiData := make(map[string]interface{})
+		//apiData["ADD_DEVICE_API"] = o.ADD_DEVICE_API
+		//apiData["REMOVE_DEVICE_API"] = o.REMOVE_DEVICE_API
+		//apiData["DELETE_DEVICE_API"] = o.DELETE_DEVICE_API
+		//apiData["ADD_LINK_API"] = o.ADD_LINK_API
+		//apiData["REMOVE_LINK_API"] = o.REMOVE_LINK_API
+		//configModule.PutConfig(ONOS_API_CONFIG_PATH, apiData)
 	}
 
 	o.showOnosPage(c)
@@ -143,7 +198,9 @@ func (o *OnosTopoModule) configOnosEndpointAPI(addrPort string) {
 
 	// Add local node to ONOS after updating the API URLs
 	// Init my local node to ONOS instance.
-	o.topoAddDevice(o.hostname, o.version, time.Now().String())
+	//
+	// run it in the background to avoid to slow down the bootstrap and Rest API procedure.
+	go o.topoAddDevice(o.hostname, o.version, time.Now().String())
 }
 
 
