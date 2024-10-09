@@ -1,18 +1,116 @@
 package Config
 
 import (
+	"crypto/rand"
+	"errors"
+	"fmt"
+	"github.com/MaoJianwei/gmsm/sm3"
+	"io"
+
+	//"github.com/tjfoc/gmsm/sm3"
+	//"github.com/tjfoc/gmsm/sm4"
+	"github.com/MaoJianwei/gmsm/sm4"
 	"log"
 	"os"
 	"testing"
 	"time"
 )
 
+func Test_SM4(t *testing.T) {
+	iv := []byte("qindaoRadar118.5")
+	key := []byte("Key 1920aF1080 !")
+	plainText := "contact Beijing TOWER 168.55@!xichang。 outEnc, err := MaoSm4EncryptAndDecrypt(plainTextByte, key, iv, true)，func Test_SM4(t *testing.T) {"
+	plainTextByte := []byte(plainText)
+
+	var count uint64 = 1
+	for {
+		outEnc, err := MaoSm4EncryptAndDecrypt(plainTextByte, key, iv, true)
+		if err != nil {
+			fmt.Printf("err = %s\n", err.Error())
+			return
+		}
+
+		outDec, err := MaoSm4EncryptAndDecrypt(outEnc, key, iv, false)
+		if err != nil {
+			fmt.Printf("err = %s\n", err.Error())
+			return
+		}
+
+		count++
+		if count%1000000 == 0 {
+			fmt.Printf("%s = %d\n", outDec, count)
+		}
+	}
+	return
+}
+
+func MaoSm4EncryptAndDecrypt(plainText []byte, key []byte, iv []byte, isEncrypt bool) ([]byte, error) {
+	if iv == nil {
+		if !isEncrypt {
+			return nil, errors.New("during decryption, iv must be provided")
+		}
+		iv = make([]byte, sm4.BlockSize)
+		io.ReadFull(rand.Reader, iv)
+	}
+	out, err := sm4.Sm4Cbc(key, plainText, isEncrypt, iv)
+	return out, err
+}
+func MaoSm3Digest(plainText []byte) ([]byte) {
+	digest := sm3.Sm3Sum(plainText)
+	return digest
+}
+
+func Test_SM3_loop(t *testing.T) {
+	origin := "Bigmao Radio Station 2012-2023. SING Group. Beijing = Bigmao Radio Station 2012-2023. SING Group. Beijing"
+
+	count := 1
+	for {
+		digest1 := MaoSm3Digest([]byte(origin))
+
+		count++
+		if count%1000000 == 0 {
+			fmt.Printf("%d - %v = %v\n", count, digest1, origin)
+		}
+	}
+}
+
+func Test_SM3(t *testing.T) {
+
+	origin := "Bigmao Radio Station 2012-2023. SING Group. Beijing = Bigmao Radio Station 2012-2023. SING Group. Beijing"
+	fmt.Printf("%v\n\n", origin)
+
+	digest1 := sm3.Sm3Sum([]byte(origin))
+	fmt.Printf("%v = %v\n\n", digest1, origin)
+	for _, d := range digest1 {
+		fmt.Printf("%02X ", d)
+	}
+
+	sss := sm3.New()
+	bs1 := sss.BlockSize()
+	s1 := sss.Size()
+	fmt.Printf("%v = %v\n\n", bs1, s1)
+
+	n, err := sss.Write([]byte(origin))
+	fmt.Printf("%v = %v\n\n", n, err)
+
+	bs2 := sss.BlockSize()
+	s2 := sss.Size()
+	fmt.Printf("%v = %v\n\n", bs2, s2)
+
+	digest2 := sss.Sum(nil)
+	fmt.Printf("%v = %v\n\n", digest2, origin)
+
+	SSSSSS := sm3.New()
+	digest3 := SSSSSS.Sum([]byte(origin))
+	fmt.Printf("%v = %v\n\n", digest3, origin)
+
+}
+
 func TestConfigYamlModule_main(t *testing.T) {
 
 	log.Println(os.Args)
 
-	configModule := &ConfigYamlModule{
-	}
+	configModule := &ConfigYamlModule{}
 
 	if !configModule.InitConfigModule(DEFAULT_CONFIG_FILE) {
 		return
@@ -27,7 +125,6 @@ func TestConfigYamlModule_main(t *testing.T) {
 	vvv[6666] = "radar"
 	vvv[8888] = 5511
 	vvv[7181] = 2.525
-
 
 	value, errCode := configModule.GetConfig("/qingdao/radar/freq") // ok
 	log.Printf("Put 1 %v, %v\n", value, errCode)
@@ -46,7 +143,6 @@ func TestConfigYamlModule_main(t *testing.T) {
 
 	value, errCode = configModule.GetConfig("/config/module/instance/vvv") // ok
 	log.Printf("Put 6 %v, %v\n", value, errCode)
-
 
 	b, v := configModule.PutConfig("/qingdao/radar/freq", 118.5) // ok
 	log.Printf("Put 1 %v, %v\n", b, v)
@@ -69,10 +165,6 @@ func TestConfigYamlModule_main(t *testing.T) {
 	configModule.RequireShutdown()
 
 	time.Sleep(3 * time.Second)
-
-
-
-
 
 	/*// ============================ Develop & Unit tests =============================
 	config := make(map[string]interface{})
@@ -209,20 +301,6 @@ func TestConfigYamlModule_main(t *testing.T) {
 	return
 
 	// =========================================================*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 	//paths := strings.Split("/qingdao/ra1dar/118.5/beij1ing-2", "/")
 	//if paths[0] != "" || paths[len(paths)-1] == "" {
