@@ -7,7 +7,7 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/influxdata/influxdb-client-go/v2 v2.5.1
-	github.com/spf13/cobra v1.7.0
+	github.com/spf13/cobra v1.8.1
 	golang.org/x/net v0.10.0
 	google.golang.org/grpc v1.57.0
 	google.golang.org/protobuf v1.30.0
