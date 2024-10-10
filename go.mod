@@ -10,7 +10,7 @@ require (
 	github.com/spf13/cobra v1.7.0
 	golang.org/x/net v0.10.0
 	google.golang.org/grpc v1.57.0
-	google.golang.org/protobuf v1.30.0
+	google.golang.org/protobuf v1.35.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
