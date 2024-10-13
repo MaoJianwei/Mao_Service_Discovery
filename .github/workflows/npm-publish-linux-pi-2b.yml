@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  publish-npm:
+  build-npm:
     runs-on: PI-2B
     steps:
       - uses: actions/checkout@v4
@@ -47,6 +47,10 @@ jobs:
         working-directory: ./.npm-release-binary/
         run: npm version prerelease --preid Raspberry-Pi-rc1-$GITHUB_REF_NAME-$GITHUB_SHA
         
+  publish-npm:
+    runs-on: PI-2B
+    needs: build-npm
+    steps:
       - name: Publish NPM Package
         working-directory: ./.npm-release-binary/
         run: npm publish
