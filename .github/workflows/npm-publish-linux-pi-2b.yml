@@ -11,14 +11,10 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-npm:
+  build-golang:
     runs-on: PI-2B
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18
-          registry-url: https://registry.npmjs.org/
 
       # Mao: using the go toolchain deployed in the exist env, Raspberry PI 2B.
       # - name: Set up Go
@@ -32,6 +28,15 @@ jobs:
       - name: Golang Test
         run: go test -v ./...
         
+  build-npm:
+    runs-on: PI-2B
+    needs: build-golang
+    steps:
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          registry-url: https://registry.npmjs.org/
+
       - run: ./build_webui.sh
       
       - name: Run Check Version
