@@ -40,6 +40,15 @@ jobs:
       - run: mv ./MaoServerDiscovery ./.npm-release-binary/
       - run: cp -vrf ./resource/ ./.npm-release-binary/
       
+  publish-npm:
+    runs-on: PI-2B
+    needs: build-npm
+    steps:
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          registry-url: https://registry.npmjs.org/
+      
       - run: git config --global user.email "maojianwei2016@126.com"
       - run: git config --global user.name "Jianwei Mao"
       
@@ -47,10 +56,6 @@ jobs:
         working-directory: ./.npm-release-binary/
         run: npm version prerelease --preid Raspberry-Pi-rc1-$GITHUB_REF_NAME-$GITHUB_SHA
         
-  publish-npm:
-    runs-on: PI-2B
-    needs: build-npm
-    steps:
       - name: Publish NPM Package
         working-directory: ./.npm-release-binary/
         run: npm publish
