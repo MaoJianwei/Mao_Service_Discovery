@@ -4,6 +4,7 @@ import (
 	branch "MaoServerDiscovery/cmd"
 	"MaoServerDiscovery/util"
 	"errors"
+	"fmt"
 	"github.com/spf13/cobra"
 	"net"
 	"os"
@@ -134,6 +135,16 @@ var serverCmd = &cobra.Command{
 		branch.RunServer(&report_server_addr, report_server_port, &web_server_addr, web_server_port,
 			influxdbUrl, influxdbToken, influxdbOrgBucket,
 			cli_dump_interval, refresh_interval, minLogLevel, silent, ROOT_VERSION)
+	},
+}
+
+var versionCmd = &cobra.Command{
+	Use: "version",
+	Short:   "Mao: Show software version and code version.",
+	Long:    "Mao-Service-Discovery: Show software version and code version.",
+	// Version: SERVER_VERSION,
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("MaoServerDiscovery version " + ROOT_VERSION_SIGNATURE)
 	},
 }
 
@@ -396,7 +407,7 @@ func main() {
 	   util.MaoLog(util.INFO, "enable pprof: %v", http.ListenAndServe("0.0.0.0:39999", nil))
 	}()
 	
-	rootCmd.AddCommand(generalClientCmd, serverCmd)
+	rootCmd.AddCommand(versionCmd, generalClientCmd, serverCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		//util.MaoLog(util.ERROR, fmt.Sprintf("Fail to execute rootCmd: %s", err))
