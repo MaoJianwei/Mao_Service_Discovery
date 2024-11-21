@@ -7,6 +7,12 @@
 |Binary Release|[![Node.js Package Publish (Commit) (Linux)](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/npm-publish-linux.yml/badge.svg)](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/npm-publish-linux.yml) [![Node.js Package Publish (Commit) (Raspberry-Pi-arm)](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/npm-publish-linux-pi-2b.yml/badge.svg)](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/npm-publish-linux-pi-2b.yml) [![Node.js Package Publish (Commit) (Windows)](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/npm-publish-windows.yml/badge.svg)](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/npm-publish-windows.yml) [![Docker Image Publish](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/MaoJianwei/Mao_Service_Discovery/actions/workflows/docker-publish.yml)|
 |Binary Link|[Github Docker Image](https://github.com/MaoJianwei/Mao_Service_Discovery/pkgs/container/mao_service_discovery) = [NPM official](https://www.npmjs.com/package/mao-service-discovery?activeTab=versions) = [Taobao & Alibaba Cloud mirror](https://npmmirror.com/package/mao-service-discovery)|
 
+## Quick Show - Digital Map
+
+![Digital Map](https://raw.githubusercontent.com/MaoJianwei/Mao_Service_Discovery/refs/heads/master/digital_map_example.png)
+
+For this example, we utilizes the map UI and API provided by [ONOS_TopologyShow_ChineseMap](https://github.com/MaoJianwei/ONOS_TopologyShow_ChineseMap) project :)
+
 ## Build
 
 **Method 1: Compile and link statically, and build WebUI 2.0**
