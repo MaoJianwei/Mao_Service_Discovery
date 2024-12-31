@@ -146,7 +146,7 @@ func (c *GeneralClientV2) getEnvironmentTemperature() (float64, error) {
 			}
 		} else {
 			util.MaoLogM(util.WARN, c2_MODULE_NAME, "Fail to parse 1-line protocol data, the lines of the result text is not 3, in fact %d.", len(w1DataSplit))
-			err = errors.New(fmt.Sprintf("Fail to parse 1-line protocol data, the lines of the result text is not 3, in fact %d.", len(w1DataSplit)))
+			err = errors.New(fmt.Sprintf("Fail to parse 1-line protocol data, the lines of the result text is not 3, in fact %d", len(w1DataSplit)))
 		}
 	} else {
 		util.MaoLogM(util.WARN, c2_MODULE_NAME, "Fail to get 1-line protocol data, %s", err.Error())
