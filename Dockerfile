@@ -1,4 +1,4 @@
-FROM golang:1.23 as golang_builder
+FROM golang:1.24 as golang_builder
 MAINTAINER Jianwei Mao <maojianwei2012@126.com>
 
 WORKDIR /
