@@ -10,6 +10,7 @@ import ConfigAllText from "@/components/config/ConfigAllText.vue";
 import DeviceInfo from "@/components/DeviceInfo.vue";
 import ONOS from "@/components/ONOS";
 import ApiListOldApi from "@/components/ApiListOldApi.vue"
+import ConfigGrpc from "@/components/config/ConfigGrpc.vue";
 
 // Vue.use(VueRouter)
 
@@ -44,6 +45,12 @@ export default createRouter({
                         path: 'icmp',
                         components: {
                             maoConfig: ConfigIcmp
+                        }
+                    },
+                    {
+                        path: 'grpc',
+                        components: {
+                            maoConfig: ConfigGrpc
                         }
                     },
                     {

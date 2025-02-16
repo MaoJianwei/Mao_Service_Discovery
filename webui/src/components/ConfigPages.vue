@@ -13,6 +13,7 @@
 
       <el-menu-item index="/config/email">邮件通知配置</el-menu-item>
       <el-menu-item index="/config/icmp">ICMP检测配置</el-menu-item>
+      <el-menu-item index="/config/grpc">gRPC服务管理</el-menu-item>
       <el-menu-item index="/config/topo">拓扑接口配置</el-menu-item>
       <el-menu-item index="/config/mysql">MySQL接口配置</el-menu-item>
       <el-menu-item index="/config/allText">配置文件导出</el-menu-item>
