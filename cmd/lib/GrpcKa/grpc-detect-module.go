@@ -7,16 +7,22 @@ import (
 	"MaoServerDiscovery/util"
 	"errors"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"
 	"net"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 )
 
 const (
 	MODULE_NAME = "GRPC-Detect-module"
+
+	URL_GRPC_SHOW_ALL_SERVICE = "/showAllGrpcService"
+	URL_GRPC_SHOW_OFFLINE_SERVICE = "/showOfflineGrpcService"
+	URL_GRPC_DEL_SERVICE = "/delGrpcService"
 )
 
 type GrpcDetectModule struct {
@@ -239,6 +245,40 @@ func (g *GrpcDetectModule) GetServiceInfo() []*MaoApi.GrpcServiceNode {
 }
 
 
+func (g *GrpcDetectModule) showAllServices(c *gin.Context) {
+	c.JSON(200, g.GetServiceInfo())
+}
+func (g *GrpcDetectModule) showOfflineServices(c *gin.Context) {
+	offlineServices := make([]*MaoApi.GrpcServiceNode, 0)
+	for _, s := range g.GetServiceInfo() {
+		if !s.Alive {
+			offlineServices = append(offlineServices, s)
+		}
+	}
+	c.JSON(200, offlineServices)
+}
+func (g *GrpcDetectModule) processDelService(c *gin.Context) {
+	serviceNames, ok := c.GetPostForm("serviceNames")
+	if ok {
+		serviceNameList := strings.Fields(serviceNames)
+		for _, s := range serviceNameList {
+			g.serverInfo.Delete(s)
+		}
+	}
+	c.String(200, "success")
+}
+func (g *GrpcDetectModule) configRestControlInterface() {
+	restfulServer := MaoCommon.ServiceRegistryGetRestfulServerModule()
+	if restfulServer == nil {
+		util.MaoLogM(util.WARN, MODULE_NAME, "Fail to get RestfulServerModule, unable to register restful apis.")
+		return
+	}
+
+	restfulServer.RegisterGetApi(URL_GRPC_SHOW_ALL_SERVICE, g.showAllServices)
+	restfulServer.RegisterGetApi(URL_GRPC_SHOW_OFFLINE_SERVICE, g.showOfflineServices)
+	restfulServer.RegisterPostApi(URL_GRPC_DEL_SERVICE, g.processDelService)
+}
+
 
 func (g *GrpcDetectModule) InitGrpcModule(addrPort string) bool {
 	g.mergeChannel = make(chan *MaoApi.GrpcServiceNode, 1024)
@@ -263,6 +303,8 @@ func (g *GrpcDetectModule) InitGrpcModule(addrPort string) bool {
 
 	go g.controlLoop()
 	go g.refreshShowingService()
+
+	g.configRestControlInterface()
 
 	return true
 }
