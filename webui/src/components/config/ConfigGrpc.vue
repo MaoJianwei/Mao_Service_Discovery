@@ -58,10 +58,9 @@ export default {
       column.index = columnIndex;
     },
 
-    // TODO: TBD
     handleDelete(index, row) {
       var vueThis = this;
-      this.$http.post("/api/delGrpcService", {serviceNames: row.deviceIp},
+      this.$http.post("/api/delGrpcService", {serviceNames: row.serviceName},
           {
             headers: {
               'Content-Type': 'application/x-www-form-urlencoded;'
