@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"crypto/rand"
 	"errors"
+	"fmt"
 	"github.com/MaoJianwei/gmsm/sm3"
 	"io"
-
 	//"github.com/tjfoc/gmsm/sm3"
 	//"github.com/tjfoc/gmsm/sm4"
 	"github.com/MaoJianwei/gmsm/sm4"
@@ -14,6 +14,194 @@ import (
 	"testing"
 	"time"
 )
+
+func TestSM4GCM_TestVectors(t *testing.T) {
+	/*
+		SM4-GCM Test Vectors
+
+		   Initialization Vector:   00001234567800000000ABCD
+		   Key:                     0123456789ABCDEFFEDCBA9876543210
+		   Plaintext:               AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBB
+		                            CCCCCCCCCCCCCCCCDDDDDDDDDDDDDDDD
+		                            EEEEEEEEEEEEEEEEFFFFFFFFFFFFFFFF
+		                            EEEEEEEEEEEEEEEEAAAAAAAAAAAAAAAA
+		   Associated Data:         FEEDFACEDEADBEEFFEEDFACEDEADBEEFABADDAD2
+		   CipherText:              17F399F08C67D5EE19D0DC9969C4BB7D
+		                            5FD46FD3756489069157B282BB200735
+		                            D82710CA5C22F0CCFA7CBF93D496AC15
+		                            A56834CBCF98C397B4024A2691233B8D
+		   Authentication Tag:      83DE3541E4C2B58177E065A9BF7B62EC
+	*/
+
+	IV := []byte{0x00, 0x00, 0x12, 0x34, 0x56, 0x78, 0x00, 0x00, 0x00, 0x00, 0xAB, 0xCD}
+
+	key := []byte{0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54, 0x32, 0x10}
+
+	plaintext := []byte{
+		0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+		0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB,
+		0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
+		0xDD, 0xDD, 0xDD, 0xDD, 0xDD, 0xDD, 0xDD, 0xDD,
+		0xEE, 0xEE, 0xEE, 0xEE, 0xEE, 0xEE, 0xEE, 0xEE,
+		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+		0xEE, 0xEE, 0xEE, 0xEE, 0xEE, 0xEE, 0xEE, 0xEE,
+		0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+	}
+
+
+	associatedData := []byte{
+		0xFE, 0xED, 0xFA, 0xCE, 0xDE, 0xAD, 0xBE, 0xEF,
+		0xFE, 0xED, 0xFA, 0xCE, 0xDE, 0xAD, 0xBE, 0xEF,
+		0xAB, 0xAD, 0xDA, 0xD2,
+	}
+
+
+	cipherText := []byte{
+		0x17, 0xF3, 0x99, 0xF0, 0x8C, 0x67, 0xD5, 0xEE,
+		0x19, 0xD0, 0xDC, 0x99, 0x69, 0xC4, 0xBB, 0x7D,
+		0x5F, 0xD4, 0x6F, 0xD3, 0x75, 0x64, 0x89, 0x06,
+		0x91, 0x57, 0xB2, 0x82, 0xBB, 0x20, 0x07, 0x35,
+		0xD8, 0x27, 0x10, 0xCA, 0x5C, 0x22, 0xF0, 0xCC,
+		0xFA, 0x7C, 0xBF, 0x93, 0xD4, 0x96, 0xAC, 0x15,
+		0xA5, 0x68, 0x34, 0xCB, 0xCF, 0x98, 0xC3, 0x97,
+		0xB4, 0x02, 0x4A, 0x26, 0x91, 0x23, 0x3B, 0x8D,
+	}
+	authTag := []byte{
+		0x83, 0xDE, 0x35, 0x41, 0xE4, 0xC2, 0xB5, 0x81,
+		0x77, 0xE0, 0x65, 0xA9, 0xBF, 0x7B, 0x62, 0xEC,
+	}
+
+
+	fmt.Println("=======================")
+	fmt.Printf("data = %v\n", plaintext)
+
+	gcmMsg, T, err := sm4.Sm4GCM(key, IV, plaintext, associatedData, true)
+	if err != nil {
+		t.Errorf("sm4 enc error:%s", err)
+	}
+	fmt.Printf("gcmMsg = %v\n", gcmMsg)
+
+	gcmDec1, T_1, err := sm4.Sm4GCM(key, IV, gcmMsg, associatedData, false)
+	if err != nil {
+		t.Errorf("sm4 dec error:%s", err)
+	}
+	fmt.Printf("gcmDec1 = %v\n", gcmDec1)
+	if bytes.Compare(T, T_1) == 0 {
+		fmt.Println("T, T_1 authentication succeeded, it is correct.")
+	} else {
+		t.Errorf("T, T_1 authentication fail, it is wrong.")
+	}
+
+
+	if bytes.Compare(T, authTag) == 0 {
+		fmt.Println("T, authTag authentication succeeded, it is fantastically correct.")
+	} else {
+		fmt.Println("T, authTag authentication fail, it is temporarily correct.")
+	}
+
+	if len(plaintext) != len(gcmDec1) {
+		t.Errorf("sm4 len(plaintext):%d != len(gcmDec1):%d", len(plaintext), len(gcmDec1))
+	}
+	if len(gcmMsg) != len(gcmDec1) {
+		t.Errorf("sm4 len(gcmMsg):%d != len(gcmDec1):%d", len(gcmMsg), len(gcmDec1))
+	}
+	for i := 0; i < len(plaintext); i++ {
+		if plaintext[i] != gcmDec1[i] {
+			t.Errorf("sm4 plaintext[%d]:%x != gcmDec1[%d]:%x", i, plaintext[i], i, gcmDec1[i])
+		}
+	}
+	for i := 0; i < len(cipherText); i++ {
+		if cipherText[i] != gcmMsg[i] {
+			t.Errorf("sm4 cipherText[%d]:%x != gcmMsg[%d]:%x", i, cipherText[i], i, gcmMsg[i])
+		}
+	}
+	fmt.Println("Enc/Dec successed")
+
+}
+
+
+func TestSM4GCM(t *testing.T) {
+
+	// There is problem if the length of plaintext is not n*sm4.BlockSize
+	key := []byte("Key 1920aF1080 !")
+
+	data := []byte("contact Beijing TOWER 168.55@!xichang。 outEnc, err := MaoSm4EncryptAndDecrypt(plainTextByte, key, iv, true)，func Test_SM4(t *testing.T) {")
+	//data := []byte("contact Beijing TOWER 168.55@!xichang. outEnc, err := MaoSm4EncryptAndDecrypt(plainTextByte, key, iv, true), func Test_SM4(t *testing.T) {987mao")
+
+	IV := []byte("qindaoRadar1")
+
+	testA := [][]byte{ // the length of the A can be random
+		nil,
+		[]byte{},
+		[]byte{0x01, 0x23, 0x45, 0x67, 0x89},
+		[]byte{0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10},
+	}
+	for _, A := range testA {
+
+
+
+		fmt.Println("=======================")
+		fmt.Printf("data = %v\n", data)
+
+		gcmMsg, T, err := sm4.Sm4GCM(key, IV, data, A, true)
+		if err != nil {
+			t.Errorf("sm4 enc error:%s", err)
+		}
+		fmt.Printf("gcmMsg = %v\n", gcmMsg)
+
+		gcmDec1, T_1, err := sm4.Sm4GCM(key, IV, gcmMsg, A, false)
+		if err != nil {
+			t.Errorf("sm4 dec error:%s", err)
+		}
+		fmt.Printf("gcmDec1 = %v\n", gcmDec1)
+		if bytes.Compare(T, T_1) == 0 {
+			fmt.Println("authentication successed, it is correct.")
+		} else {
+			t.Errorf("authentication fail, it is wrong.")
+		}
+
+		if len(data) != len(gcmDec1) {
+			t.Errorf("sm4 len(data):%d != len(gcmDec1):%d", len(data), len(gcmDec1))
+		}
+		if len(gcmMsg) != len(gcmDec1) {
+			t.Errorf("sm4 len(gcmMsg):%d != len(gcmDec1):%d", len(gcmMsg), len(gcmDec1))
+		}
+		for i := 0; i < len(data); i++ {
+			if data[i] != gcmDec1[i] {
+				t.Errorf("sm4 data[%d]:%x != gcmDec1[%d]:%x", i, data[i], i, gcmDec1[i])
+			}
+		}
+		fmt.Println("Enc/Dec successed")
+
+
+
+		//Failed Test : if we input the different A , that will be a falied result.
+		A = []byte{0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd}
+		gcmDec2, T_2, err := sm4.Sm4GCM(key, IV, gcmMsg, A, false)
+		if err != nil {
+			t.Errorf("sm4 dec error:%s", err)
+		}
+		fmt.Printf("gcmDec2 = %v\n", gcmDec2)
+		if bytes.Compare(T, T_2) != 0 {
+			fmt.Println("authentication failed, it is correct.")
+		} else {
+			t.Errorf("authentication successed, it is wrong.")
+		}
+
+		if len(data) != len(gcmDec2) {
+			t.Errorf("sm4 len(data):%d != len(gcmDec2):%d", len(data), len(gcmDec2))
+		}
+		if len(gcmMsg) != len(gcmDec2) {
+			t.Errorf("sm4 len(gcmMsg):%d != len(gcmDec2):%d", len(gcmMsg), len(gcmDec2))
+		}
+		for i := 0; i < len(data); i++ {
+			if data[i] != gcmDec2[i] {
+				t.Errorf("sm4 data[%d]:%x != gcmDec2[%d]:%x", i, data[i], i, gcmDec2[i])
+			}
+		}
+		fmt.Println("Enc/Dec successed")
+	}
+}
 
 func Test_SM4(t *testing.T) {
 	iv := []byte("qindaoRadar118.5")

@@ -3,7 +3,7 @@ module MaoServerDiscovery
 go 1.20
 
 require (
-	github.com/MaoJianwei/gmsm v1.4.2
+	github.com/MaoJianwei/gmsm v1.5.0
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/influxdata/influxdb-client-go/v2 v2.5.1
